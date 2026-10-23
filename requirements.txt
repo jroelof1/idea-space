@@ -1,0 +1,9 @@
+numpy
+scipy
+scikit-learn
+umap-learn
+sentence-transformers
+pyyaml
+pymupdf       # only needed to read a folder of PDFs
+anthropic     # only needed for the optional tagging step
+pytest

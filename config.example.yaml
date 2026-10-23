@@ -1,0 +1,5 @@
+# Copy to config.yaml (it is git-ignored) and fill in.
+email: you@example.org          # sent to OpenAlex as the polite-pool contact
+openalex_key: ""                # free key from https://openalex.org/settings/api (required: OpenAlex no longer serves keyless requests)
+tag_model: ""                   # optional: model for the tagging step; default claude-haiku-5-5
+# The Anthropic key for tagging is read from the ANTHROPIC_API_KEY environment variable, never from this file.

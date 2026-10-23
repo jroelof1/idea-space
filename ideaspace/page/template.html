@@ -1,0 +1,1036 @@
+<title>Idea Space Explorer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap">
+<style>
+:root{--gold:#f0c35a;--bg:#06070b;--panel:rgba(14,16,24,.88);--ink:#ebe8e1;--mut:#8b91a1;--line:rgba(255,255,255,.09);--acc:#a3b1ff;--own:#ff8a78;--chip:rgba(255,255,255,.06);--ui:"Hanken Grotesk",system-ui,sans-serif;--display:"Newsreader",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.5 var(--ui);overflow:hidden}
+#app{position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#view{position:absolute;inset:0;background:radial-gradient(1100px 760px at 50% 44%,#10132199 0%,#0a0c1500 70%),radial-gradient(900px 600px at 18% 90%,#16102a66,#0000 70%),#05060b;touch-action:none}
+canvas{display:block;width:100%;height:100%;outline:none}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px #0006;padding:10px 12px;max-width:calc(100vw - 32px)}
+#top{top:12px;left:16px;right:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;max-width:none}
+#top input[type=search]{background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+button,select{background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--acc)}button.on{border-color:var(--acc);color:var(--acc)}
+button:disabled{opacity:.45;cursor:default}
+#legend{bottom:72px;left:16px;width:250px;max-height:38vh;overflow:auto;font-size:13px;display:none}#legend.open{display:block}
+#legend .row{display:flex;gap:6px;align-items:center;padding:2px 0;cursor:pointer}
+#legend .row:hover{color:var(--acc)}#legend .sw{width:10px;height:10px;border-radius:50%;flex:none}
+#legend h4,#card h4,#side h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600}
+body.fopen #card{right:412px}
+#card{top:var(--tb,72px);right:16px;width:400px;max-height:50vh;overflow:auto;display:none}
+#card h3{margin:0 0 4px;font-size:15px;line-height:1.3}
+.meta{color:var(--mut);font-size:12px}
+.tag{display:inline-block;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin:2px 4px 2px 0;font-size:11px}
+.tag.own{border-color:var(--own);color:var(--own)}
+.abs{margin:10px 0;font-size:14px;line-height:1.55}
+.q{border-left:3px solid var(--acc);padding:2px 10px;margin:8px 0;font-size:13.5px}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+a.pl{color:var(--acc);cursor:pointer;text-decoration:underline}
+#gapl{left:16px;top:var(--tb,72px);width:360px;display:none;max-height:calc(62vh - 150px);overflow:auto;font-size:14px}
+#gapl[style*="block"]~#pins{left:392px}
+#pins{left:16px;top:var(--tb,72px);width:360px;display:none;max-height:calc(62vh - 150px);overflow:auto;font-size:14px}
+#region{right:16px;bottom:72px;width:340px;display:none;max-height:36vh;overflow:auto;font-size:14px}
+#time{display:none;margin:6px 0 10px}#filt #time{display:block}#time .yrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px}
+#hist{width:100%;height:46px;display:block}
+#chat{right:372px;bottom:72px;width:380px;display:none;flex-direction:column;height:min(420px,50vh)}
+#chat.open{display:flex}
+#log{flex:1;overflow:auto;font-size:13px;white-space:pre-wrap}
+#log .u{color:var(--acc);margin-top:6px}#log .t{color:var(--mut);font-size:11px}
+#chat form{display:flex;gap:6px;margin-top:8px}#chat input{flex:1;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+#tip{position:absolute;pointer-events:none;background:var(--panel);color:var(--ink);font-size:13px!important;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;display:none;max-width:320px;z-index:5}
+#hint{position:absolute;left:50%;transform:translateX(-50%);bottom:62px;color:#8a919d;font-size:12px;pointer-events:none;text-align:center;width:min(720px,90vw)}
+@media (max-width:760px){#legend{display:none}#card{width:auto;left:16px;top:auto;bottom:70px;max-height:42vh}#chat{width:auto;left:16px}#region,#pins,#gapl{left:16px;right:16px;width:auto;top:auto;bottom:70px;max-height:42vh}#chat{right:16px}#hint{display:none}#linkset{left:16px!important}}
+#chat .pb{display:flex;flex-direction:column;flex:1;min-height:0}#chat.min .pb{display:none}
+.ph{display:flex;align-items:center;gap:4px;position:sticky;top:-10px;margin:-10px -12px 8px;padding:6px 8px 6px 12px;background:var(--panel);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;z-index:2}
+.pt{flex:1;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.ph button{padding:1px 9px;font-size:16px;line-height:1.3;min-width:30px}
+.panel.min .pb{display:none}.panel.min{max-height:none!important;overflow:visible!important}.panel.min .ph{margin-bottom:-10px;border-bottom:0;border-radius:10px}
+#top.collapsed>*:not(#tc){display:none}#top.collapsed{width:auto;right:auto}
+#hint{transition:opacity .8s}
+#ana table{border-collapse:collapse;font-size:13px;margin:6px 0}#ana td,#ana th{border:1px solid var(--line);padding:3px 7px;text-align:left;vertical-align:top}
+#ana h3{margin:18px 0 6px;font-size:15px}#ana .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+#ana .hd{position:sticky;top:-10px;margin:-10px -12px 8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:3}
+#ana textarea{width:100%;height:220px;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:12px/1.4 ui-monospace,monospace;padding:8px}
+.sr{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--line)}.sr .t{flex:1}
+#lensm .chips{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}#lensm .chip{padding:2px 9px;border:1px solid var(--line);background:var(--chip);border-radius:999px;font-size:12.5px;cursor:pointer;user-select:none}#lensm .chip.on{border-color:var(--acc);color:var(--acc);background:transparent}
+#lensm h4{margin:12px 0 4px}#lensm input[type=text]{width:100%;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:inherit}
+#filt .chips{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px}#filt .chip{padding:2px 9px;border:1px solid var(--line);background:var(--chip);border-radius:999px;font-size:13px;cursor:pointer;user-select:none}#filt .chip.on{border-color:var(--acc);color:var(--acc)}#filt .chip small{color:var(--mut)}
+label.sm{font-size:12px;color:var(--mut);display:flex;gap:4px;align-items:center}
+input[type=range]{accent-color:var(--acc);width:90px;flex:0 1 90px}#time label{flex:none}#hist{min-width:60px}input[type=range]{min-width:0}
+
+#bChat{background:var(--panel);border:1px solid var(--line);height:42px;border-radius:13px;padding:0 16px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 12px 30px -14px #000c}
+/* ---- redesign: glass panels, serif display, quiet chrome ---- */
+.panel{background:var(--panel);backdrop-filter:blur(18px) saturate(1.25);-webkit-backdrop-filter:blur(18px) saturate(1.25);border:1px solid var(--line);border-radius:14px;box-shadow:0 22px 60px -16px #000d,inset 0 1px 0 rgba(255,255,255,.05);padding:12px 14px}
+button,select{background:var(--chip);color:var(--ink);border:1px solid transparent;border-radius:9px;padding:6px 11px;font:500 13px/1.2 var(--ui);letter-spacing:.01em;transition:background .15s,color .15s,border-color .15s}
+button:hover,select:hover{background:rgba(255,255,255,.11);border-color:transparent}
+button.on{background:rgba(163,177,255,.17);color:var(--acc);border-color:rgba(163,177,255,.38)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#top{top:14px;left:14px;right:14px;background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;gap:10px;align-items:center}
+#brand{font:italic 500 23px/1 var(--display);letter-spacing:.005em;padding:0 6px 0 2px;display:flex;flex-direction:column;gap:3px;white-space:nowrap}
+#brand small{font:400 10.5px var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+#qw{flex:1 1 280px!important;max-width:460px;min-width:180px!important}
+#top input[type=search]{height:42px;border-radius:13px;padding:0 14px 0 40px;background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238b91a1' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 13px 50% no-repeat;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);font:400 14.5px var(--ui);box-shadow:0 12px 30px -14px #000c}
+#top input[type=search]::placeholder{color:#7d8394}
+.seg{display:flex;gap:2px;padding:3px;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 30px -14px #000c;position:relative}
+.seg>button{background:transparent;border-radius:10px;padding:7px 12px;color:#c9ccd6}
+.seg>button:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+.seg>button.on{background:rgba(163,177,255,.18);color:var(--acc)}
+#layers{display:none;position:absolute;top:calc(100% + 10px);left:0;width:300px;z-index:30;font-size:13.5px}#layers.open{display:block}
+#layers .ovr{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}#layers{background:rgba(13,15,23,.95)}
+#layers h4{margin:12px 0 6px}#layers h4:first-child{margin-top:0}
+#layers select{width:100%}
+#layers label.sm{padding:4px 0;font-size:13.5px;color:var(--ink);gap:8px}
+#layers input[type=checkbox]{accent-color:var(--acc);width:15px;height:15px}
+#sres{top:50px!important}
+#view .lb{position:absolute;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);will-change:transform,opacity}
+#lbls{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#lbls .cl{position:absolute;transform:translate(-50%,-50%);font-family:var(--display);font-style:italic;font-weight:500;color:#efece4;text-shadow:0 0 14px #05060b,0 0 4px #05060bcc,0 1px 2px #000;white-space:nowrap;cursor:pointer;pointer-events:none;letter-spacing:.01em}
+#lbls .cl:hover{color:#fff}
+#lbls .pp{position:absolute;transform:translate(10px,-50%);font:500 12px/1.2 var(--ui);color:#e4e2dc;text-shadow:0 0 8px #05060b,0 0 3px #05060b,0 1px 1px #000;white-space:nowrap;pointer-events:none;padding-left:0;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+#hint{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;padding:6px 16px;color:#9aa0b0;font:400 12px var(--ui);bottom:16px;width:auto;max-width:min(760px,92vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tip{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font:500 13px/1.35 var(--ui)!important;box-shadow:0 14px 34px -12px #000}
+#card h3{font:500 20px/1.25 var(--display);letter-spacing:.003em;margin:2px 0 6px}
+#card .abs{font-size:14px;color:#d6d4cf}
+.pt{font:500 10.5px var(--mono);letter-spacing:.14em;color:var(--mut)}
+.ph{background:transparent;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0;margin:-12px -14px 10px;padding:8px 10px 7px 14px}
+.ph button{background:transparent;color:var(--mut);padding:0 8px;font-size:17px}.ph button:hover{color:var(--ink);background:rgba(255,255,255,.08)}
+#legend h4,#card h4,#side h4,#chat h4,h4.meta{font:500 10.5px var(--mono);letter-spacing:.14em;color:var(--mut)}
+.tag{background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font:500 11px var(--ui);color:#c4c7d1}
+.tag.own{border-color:rgba(255,138,120,.5);color:var(--own)}
+.meta{color:var(--mut);font-size:12.5px}
+a.pl{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(163,177,255,.3)}a.pl:hover{border-bottom-color:var(--acc)}
+.q{border-left:2px solid rgba(163,177,255,.55);color:#d6d4cf}
+#bm .chips{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}#bm .chip{padding:3px 11px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:var(--chip);border:1px solid transparent;color:#cfd2db}#bm .chip.on{background:rgba(163,177,255,.17);border-color:rgba(163,177,255,.4);color:var(--acc)}#bm .chip small{color:var(--mut)}
+#views .vrow{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}#views .vth{width:96px;height:60px;border-radius:8px;border:1px solid var(--line);background:#07080d center/cover no-repeat;flex:none}
+#views .vn{width:100%;background:transparent;border:1px solid transparent;border-radius:7px;color:var(--ink);font:500 17px/1.2 var(--display);padding:2px 6px;margin:-2px -6px}#views .vn:hover,#views .vn:focus{border-color:var(--line);background:var(--chip)}
+#views .vb{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#views .vb button{padding:3px 10px;font-size:12.5px}
+#views .vsave{display:flex;gap:6px;margin-bottom:8px}#views .vsave input,#views input.vq{flex:1;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit}
+#views .chips{display:flex;gap:4px;margin:6px 0}#views .chip{padding:3px 11px;border-radius:999px;font-size:13px;cursor:pointer;background:var(--chip);color:#cfd2db}#views .chip.on{background:rgba(163,177,255,.17);color:var(--acc)}
+#filt .chip,#lensm .chip{background:var(--chip);border:1px solid transparent;color:#cfd2db;padding:3px 11px}
+#filt .chip:hover,#lensm .chip:hover{background:rgba(255,255,255,.11)}
+#filt .chip.on,#lensm .chip.on{background:rgba(163,177,255,.17);border-color:rgba(163,177,255,.4);color:var(--acc)}
+input[type=range]{accent-color:var(--acc)}
+#rs textarea{width:100%;min-height:110px;resize:vertical;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;line-height:1.45}#rs .row{border-top:1px solid var(--line);padding:7px 0}#rs .bar{height:6px;border-radius:3px;background:var(--acc);opacity:.65;margin:2px 0}#rs .chip{display:inline-block;margin:2px 3px 2px 0;padding:3px 10px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:var(--chip);border:1px solid transparent;color:#cfd2db}#rs .chip.on{background:rgba(163,177,255,.17);border-color:rgba(163,177,255,.4);color:var(--acc)}
+#xl .chip,#prin .chip{display:inline-block;margin:2px 3px 2px 0;padding:3px 10px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;background:var(--chip);border:1px solid transparent;color:#cfd2db}#xl .chip.on,#prin .chip.on{background:rgba(163,177,255,.17);border-color:rgba(163,177,255,.4);color:var(--acc)}#xl .chip small,#prin .chip small{color:var(--mut)}
+#xl .row,#prin .row{border-top:1px solid var(--line);padding:7px 0}#prin .bar{height:6px;border-radius:3px;background:var(--acc);opacity:.65;margin:2px 0}#prin input[type=text],#xl input[type=text]{width:100%;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;margin:4px 0 6px}
+#chat input,#lensm input[type=text]{background:var(--chip);border:1px solid var(--line)}
+@media (max-width:760px){#brand small{display:none}#qw{max-width:none}#lbls .pp{max-width:150px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div id="app">
+ <div id="view"><canvas id="cv" tabindex="0"></canvas><div id="lbls"></div><div id="tip"></div></div>
+ <div class="panel" id="top">
+  <div id="brand">Idea Space<small id="nPap"></small></div>
+  <div id="qw" style="position:relative"><input type="search" id="q" placeholder="Search items, authors" autocomplete="off"><div class="panel" id="sres" style="display:none;top:50px;left:0;width:min(580px,92vw);max-height:60vh;overflow:auto;z-index:20;font-size:14px"></div></div>
+  <div class="seg"><button id="bLayers" title="Colour, visible layers and map overlays">Layers</button><button id="bHome" title="Return to the overview (R)">Home</button>
+   <div class="panel" id="layers"><h4>Colour by</h4>
+    <select id="lens" title="Colour by"><option value="cluster">Cluster (named by content)</option><option value="year">Year</option><option value="kind">Ours, cited, other</option><option value="cites">Citations</option><option value="evidence">Evidence kind</option><option value="mix">Field mix (optional lens)</option><option value="aff">Affinity to the active lens</option></select>
+    <h4>Show</h4>
+    <label class="sm"><input type="checkbox" id="showOur" checked> your marked items</label>
+    <label class="sm"><input type="checkbox" id="showBg" checked> uncited works</label>
+    <label class="sm"><input type="checkbox" id="showAu" checked> followed authors</label>
+    <label class="sm"><input type="checkbox" id="showLk" checked> linked works (cite / cited by)</label>
+    <label class="sm"><input type="checkbox" id="showStars" checked> star markers on starred items</label>
+    <label class="sm" style="display:none"><input type="checkbox" id="showJq" checked> quotations</label>
+    <h4>Overlays</h4>
+    <label class="sm"><input type="checkbox" id="showLb" checked> cluster and item names</label>
+    <div class="ovr"><button id="bLegend">Legend</button><button id="bLinks" title="Draw a line from each item to its nearest neighbours">Neighbour links</button><button id="bPass" title="Show our passages when a document is selected">Passages</button></div>
+   </div></div>
+  <div class="seg"><button id="bSel" title="Pick several items and see how they connect">Select &amp; connect</button><button id="bPull" title="Drag an item and see which items follow it">Pull</button><button id="bRegion" title="Place a sphere and ask what lies inside">Sphere</button><button id="bGap" title="Sparse regions where the literature is thin">Thin spots</button></div>
+  <div class="seg"><button id="bBm" title="Your bookmarks and starred items">Library</button><button id="bViews" title="Save and reopen views: camera, filters, selections">Views</button><button id="bAuth" title="Followed authors and their full publication lists">Authors</button></div>
+  <div class="seg"><button id="bFilt" title="Filter by year, kind of evidence, organism and brain tissue">Filters</button><button id="bLens" title="Re-weight the space to view it through an idea">Lens</button><button id="bPrin" title="Browse the operations, quantities, scales and mathematical forms that recur across fields">Principles</button><button id="bRes" title="Paste a phrase or paragraph and see where it resonates across the map">Paste an idea</button></div>
+    <button id="bChat" class="glassb" style="display:none">Ask Claude</button>
+  <button id="tc" title="Collapse or expand this toolbar" style="margin-left:auto">▲</button>
+ </div>
+ <div class="panel" id="linkset" style="display:none;left:420px;bottom:72px;font-size:13px"><label class="sm" style="display:inline-flex">neighbours per item <input type="range" id="lk" min="1" max="8" value="3" style="width:80px"> <b id="lkv">3</b></label> <label class="sm" style="display:inline-flex"><input type="checkbox" id="lmut"> mutual only</label></div><div class="panel" id="pullp" style="display:none;left:16px;top:var(--tb,72px);width:380px;max-height:calc(100% - 150px);overflow:auto;font-size:14px"></div><div class="panel" id="ana" style="display:none;position:fixed;inset:4vh 4vw;max-width:none;z-index:30;overflow:auto;font-size:14px"></div><div class="panel" id="lensm" style="display:none;position:fixed;top:var(--tb,72px);left:50%;transform:translateX(-50%);width:min(720px,94vw);max-width:none;max-height:calc(100% - 100px);overflow:auto;z-index:25;font-size:14px"></div><div id="anaBack" class="panel" style="display:none;position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:40;max-width:none;padding:6px 8px;gap:6px;align-items:center;border-color:var(--acc)"><button id="abk" style="border-color:var(--acc);color:var(--acc)"><span></span></button><button id="abx" title="Discard">×</button></div><div class="panel" id="filt" style="display:none;top:var(--tb,72px);right:16px;width:380px;max-height:calc(100% - 150px);overflow:auto;font-size:14px"></div><div class="panel" id="bm" style="display:none;top:var(--tb,72px);left:16px;z-index:12;width:400px;max-height:calc(100% - 150px);overflow:auto;font-size:14px"></div><div class="panel" id="prof" style="display:none;top:var(--tb,72px);left:16px;z-index:14;width:460px;max-height:calc(100% - 150px);overflow:auto;font-size:14px"></div><div class="panel" id="legend"><h4 id="legT">Clusters</h4><div id="leg"></div><div class="meta" style="margin-top:8px">Distances are approximate. Axes carry no meaning. Size shows citations. Bright stars are your marked items, planets are items we cite, faint glows are works that none of your marked items cite, and planets with a gold rim are works by followed authors.</div></div>
+ <div class="panel" id="card"></div>
+ <div class="panel" id="surp" style="display:none;top:var(--tb,72px);left:16px;width:470px;max-height:calc(100% - 150px);overflow:auto;z-index:14;font-size:14px"></div><div class="panel" id="gapl"></div><div class="panel" id="views" style="display:none;top:var(--tb,72px);left:16px;width:420px;max-height:calc(100% - 150px);overflow:auto;z-index:13;font-size:14px"></div><div class="panel" id="xl" style="display:none;top:var(--tb,72px);left:16px;width:450px;max-height:calc(100% - 150px);overflow:auto;z-index:15;font-size:14px"></div><div class="panel" id="rs" style="display:none;top:var(--tb,72px);left:16px;width:480px;max-height:calc(100% - 150px);overflow:auto;z-index:15;font-size:14px"></div><div class="panel" id="prin" style="display:none;top:var(--tb,72px);left:16px;width:470px;max-height:calc(100% - 150px);overflow:auto;z-index:15;font-size:14px"></div><div class="panel" id="pins"></div>
+ <div class="panel" id="region"></div>
+ <div id="time"><div class="meta">Publication year: <b id="yl"></b></div><canvas id="hist"></canvas><div class="yrow"><label class="sm">from <input type="range" id="y0" min="1600" max="2026" value="1600"></label><label class="sm">to <input type="range" id="y1" min="1600" max="2026" value="2026"></label></div></div>
+ <div class="panel" id="chat"><h4 style="margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)">Ask Claude about this map</h4><div id="log"></div><form id="cf"><input id="ci" placeholder="e.g. what lies between the two pinned items?" autocomplete="off"><button id="cs">Send</button></form></div>
+ <div id="hint">drag to orbit · right-drag to pan · scroll to zoom · double-click an item to fly to it · R for home</div>
+</div>
+<script id="data" type="application/json">__DATA__</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const D=JSON.parse(document.getElementById("data").textContent);
+const P=D.papers,N=P.length;let DIM=D.dim;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// vectors
+const raw=Uint8Array.from(atob(D.vec),c=>c.charCodeAt(0));const V8=new Int8Array(raw.buffer);
+const sb=Uint8Array.from(atob(D.vscale),c=>c.charCodeAt(0));const SC=new Float32Array(sb.buffer);
+let VEC=new Float32Array(N*DIM);for(let i=0;i<N;i++){const s=SC[i];let n=0;for(let k=0;k<DIM;k++){const x=V8[i*DIM+k]*s;VEC[i*DIM+k]=x;n+=x*x}n=Math.sqrt(n)||1;for(let k=0;k<DIM;k++)VEC[i*DIM+k]/=n}
+function cos(i,j){let s=0;const a=i*DIM,b=j*DIM;for(let k=0;k<DIM;k++)s+=VEC[a+k]*VEC[b+k];return s}
+function cosV(v,j){let s=0;const b=j*DIM;for(let k=0;k<DIM;k++)s+=v[k]*VEC[b+k];return s}
+let R=D.r; // mean distance to 10 nearest
+const POS=new Float32Array(N*3);for(let i=0;i<N;i++){POS[3*i]=D.pos[i][0];POS[3*i+1]=D.pos[i][1];POS[3*i+2]=D.pos[i][2]}
+const KIND=P.map(p=>p.kind==="ours"?2:p.kind==="cited"?0:p.kind==="author"?3:1);
+const OURS=[];P.forEach((p,i)=>{if(p.kind==="ours")OURS.push(i)});
+// colours
+function hsl(h,s,l){h/=360;const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return l-a*Math.max(-1,Math.min(k-3,Math.min(9-k,1)))};return[f(0),f(8),f(4)]}
+const CL=D.clusters;const cCol=(()=>{const cs=CL.map(()=>[0,0,0,0]);P.forEach((p,i)=>{const c=cs[p.cluster];c[0]+=D.pos[i][0];c[1]+=D.pos[i][1];c[2]+=D.pos[i][2];c[3]++});
+ const ang=cs.map(c=>Math.atan2(c[2]/(c[3]||1),c[0]/(c[3]||1)));const ord=ang.map((a,i)=>[a,i]).sort((x,y)=>x[0]-y[0]);const rank=[];ord.forEach(([a,i],k)=>rank[i]=k);
+ // hue runs around the map, lightness alternates so neighbouring clusters differ
+ return CL.map((c,i)=>{const k=rank[i];return hsl((k/CL.length*330+215)%360,k%2?.58:.68,k%3===0?.7:k%3===1?.62:.56)})})();
+const EVK=[...new Set(P.map(p=>p.facet&&p.facet.ev).filter(Boolean))].sort();
+const evCol=Object.fromEntries(EVK.map((k,i)=>[k,hsl((i*47+20)%360,.6,.62)]));
+const cites=P.map(p=>p.cites||0),maxC=Math.max(...cites);
+const mixMax=Math.max(...CL.map(c=>c.field_mix_bits));
+function colourOf(i,lens){const p=P[i];
+ if(lens==="year"){const y=p.year;if(!y)return[.5,.5,.5];const t=Math.max(0,Math.min(1,(y-1950)/76));return hsl(240-t*220,.7,.35+t*.3)}
+ if(lens==="kind")return p.kind==="ours"?[1,.45,.4]:p.kind==="author"?[1,.82,.3]:p.kind==="linked"?[.45,.85,.8]:p.kind==="quote"?[.93,.63,.76]:p.kind==="cited"?[.55,.75,1]:[.45,.5,.58];
+ if(lens==="cites"){const t=Math.log1p(cites[i])/Math.log1p(maxC);return hsl(50-t*40,.8,.3+t*.4)}
+ if(lens==="evidence"){const k=p.facet&&p.facet.ev;return k?evCol[k]:[.38,.4,.45]}
+ if(lens==="aff"){if(!LENS.aff)return cCol[p.cluster];const t=LENS.aff[i];return hsl(230-t*200,.75,.3+t*.4)}
+ if(lens==="mix"){const t=CL[p.cluster].field_mix_bits/(mixMax||1);return hsl(210-t*190,.7,.35+t*.3)}
+ return cCol[p.cluster]}
+// three
+const cv=$("cv");let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});renderer.setClearColor(0x000000,0)}catch(err){document.body.insertAdjacentHTML("beforeend",'<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#ccc;font:16px system-ui">This explorer needs WebGL, which this browser or device does not provide.</div>');throw err}
+const scene=new THREE.Scene();const cam=new THREE.PerspectiveCamera(55,1,.1,2000);
+const geo=new THREE.BufferGeometry();
+const aCol=new Float32Array(N*3),aSize=new Float32Array(N),aShape=new Float32Array(N),aAlpha=new Float32Array(N).fill(1),aPulse=new Float32Array(N);
+geo.setAttribute("position",new THREE.BufferAttribute(POS,3));
+geo.setAttribute("aColor",new THREE.BufferAttribute(aCol,3));geo.setAttribute("aSize",new THREE.BufferAttribute(aSize,1));
+geo.setAttribute("aShape",new THREE.BufferAttribute(aShape,1));geo.setAttribute("aAlpha",new THREE.BufferAttribute(aAlpha,1));geo.setAttribute("aPulse",new THREE.BufferAttribute(aPulse,1));
+const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.NormalBlending,uniforms:{uScale:{value:400},uPR:{value:1},uT:{value:0},uFocus:{value:200}},
+vertexShader:`attribute vec3 aColor;attribute float aSize,aShape,aAlpha,aPulse;varying vec3 vC;varying float vS,vA,vF;uniform float uScale,uPR,uT,uFocus;
+void main(){vC=aColor;vS=aShape;float pu=aPulse>0.5?(0.78+0.22*sin(uT*5.0)):1.0;vec4 mv=modelViewMatrix*vec4(position,1.0);float dz=-mv.z;
+float px=aSize*uScale/dz;px=6.0*pow(max(px,0.01)/6.0,0.6);
+bool star=aShape>1.5&&aShape<2.5;float mn=star?11.0:2.7;float mx=star?44.0:21.0;
+gl_PointSize=clamp(px*pu,mn,mx)*uPR;
+float fade=smoothstep(uFocus*0.9,uFocus*2.4,dz);float near=smoothstep(0.02*uFocus,0.14*uFocus,dz);
+vF=fade;vA=aAlpha*near;gl_Position=projectionMatrix*mv;}`,
+fragmentShader:`varying vec3 vC;varying float vS,vA,vF;
+void main(){vec2 p=(gl_PointCoord-0.5)*2.0;float r=length(p);if(r>1.0)discard;vec3 col;float a=1.0;
+vec3 n=vec3(p.x,-p.y,sqrt(max(0.0,1.0-r*r)));vec3 L=normalize(vec3(-0.42,0.62,0.66));float dif=max(dot(n,L),0.0);
+float edge=smoothstep(1.0,0.86,r);
+if(vS>1.5&&vS<2.5){float core=smoothstep(0.34,0.0,r);float sp=max(smoothstep(0.1,0.0,abs(p.x)),smoothstep(0.1,0.0,abs(p.y)))*(1.0-r);float halo=smoothstep(1.0,0.2,r)*0.35;a=clamp(core+sp*0.9+halo,0.0,1.0);if(a<0.02)discard;col=mix(vC,vec3(1.0),0.7);}
+else if(vS>0.5&&vS<1.5){float soft=smoothstep(1.0,0.15,r);a=soft*0.62;col=vC*(0.8+0.25*dif);}
+else{vec3 H=normalize(L+vec3(0.0,0.0,1.0));float spec=pow(max(dot(n,H),0.0),46.0);float fres=pow(1.0-n.z,2.4);
+ col=vC*(0.34+0.82*dif)+vec3(1.0)*spec*0.42+vC*fres*0.42+vec3(0.06,0.07,0.12)*fres;
+ if(vS>2.5){float ring=smoothstep(0.70,0.78,r)*(1.0-smoothstep(0.9,0.98,r));col=mix(col,vec3(0.94,0.76,0.35),ring);}
+ a=edge;}
+vec3 fog=vec3(0.03,0.04,0.075);col=mix(col,fog,vF*0.6);a*=(1.0-0.42*vF);
+gl_FragColor=vec4(col,a*vA);}`});
+// render on demand: the loop runs only while something changes (camera, fly, keys, zoom, pulse) or after invalidate()
+let needRender=true,raf=0,sortDirty=true,lastPulse=0;
+function invalidate(sort){needRender=true;if(sort)sortDirty=true;if(!raf)raf=requestAnimationFrame(frame)}
+const sortIdx=new Uint32Array(N);for(let i=0;i<N;i++)sortIdx[i]=i;geo.setIndex(new THREE.BufferAttribute(sortIdx,1));
+const dKey=new Float32Array(N),dDir=new THREE.Vector3(),dLastC=new THREE.Vector3(1e9,0,0),dLastD=new THREE.Vector3();let dTick=0;
+// points are alpha-blended without depth writes, so draw them far to near (re-sorted when the view changes)
+function depthSort(){cam.getWorldDirection(dDir);const cp=cam.position;if(!sortDirty&&cp.distanceToSquared(dLastC)<1e-4&&dDir.distanceToSquared(dLastD)<1e-8)return;sortDirty=false;dLastC.copy(cp);dLastD.copy(dDir);
+ for(let i=0;i<N;i++)dKey[i]=S.hide[i]?-1e30:(POS[3*i]-cp.x)*dDir.x+(POS[3*i+1]-cp.y)*dDir.y+(POS[3*i+2]-cp.z)*dDir.z;
+ sortIdx.sort((a,b)=>dKey[b]-dKey[a]);geo.index.needsUpdate=true}
+{const n=1500,sp=new Float32Array(n*3),sc=new Float32Array(n*3);let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+ for(let i=0;i<n;i++){const u=rnd()*2-1,t=rnd()*6.2832,r=Math.sqrt(1-u*u),R=900+rnd()*300;sp[3*i]=R*r*Math.cos(t);sp[3*i+1]=R*u;sp[3*i+2]=R*r*Math.sin(t);const b=.35+rnd()*.65,w=rnd();sc[3*i]=b*(.7+.3*w);sc[3*i+1]=b*(.75+.2*w);sc[3*i+2]=b;}
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(sp,3));g.setAttribute("color",new THREE.BufferAttribute(sc,3));
+ const stars=new THREE.Points(g,new THREE.PointsMaterial({size:1.5,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:.55,depthWrite:false}));stars.frustumCulled=false;scene.add(stars)}
+const pts=new THREE.Points(geo,mat);pts.frustumCulled=false;scene.add(pts);
+const lineGeo=new THREE.BufferGeometry();const lines=new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.75,depthWrite:false}));lines.frustumCulled=false;scene.add(lines);
+const sph=new THREE.Mesh(new THREE.SphereGeometry(1,28,18),new THREE.MeshBasicMaterial({color:0x7da2ff,wireframe:true,transparent:true,opacity:.22,depthWrite:false}));sph.visible=false;scene.add(sph);
+// passage layer
+let passPts=null;
+// state
+const S={lens:"cluster",sel:-1,hover:-1,pins:[],y0:1600,y1:2026,showOur:true,showBg:true,showAu:true,showLk:true,showJq:true,showStars:true,hits:null,nbrs:null,regionOn:false,regionC:new THREE.Vector3(),regionR:18,pass:false,hide:new Uint8Array(N)};
+let zoomT=null;let tgt=new THREE.Vector3(0,0,0),yaw=.6,pitch=.35,dist=210,fly=null;
+const HOME={yaw:.6,pitch:.35,dist:190,t:new THREE.Vector3(0,0,0)};
+function camUpdate(){const cp=Math.cos(pitch);cam.position.set(tgt.x+dist*cp*Math.sin(yaw),tgt.y+dist*Math.sin(pitch),tgt.z+dist*cp*Math.cos(yaw));cam.lookAt(tgt)}
+function flyTo(t,d,ms){zoomT=null;d=Math.max(MIN_D,d);fly={t0:performance.now(),ms:ms||900,from:{t:tgt.clone(),d:dist},to:{t:t.clone(),d:d}};invalidate()}
+function resize(){const w=cv.clientWidth,h=cv.clientHeight,pr=Math.min(devicePixelRatio||1,2);renderer.setPixelRatio(pr);renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();mat.uniforms.uPR.value=pr;mat.uniforms.uScale.value=h*.55/Math.tan(cam.fov*Math.PI/360)/2;invalidate()}
+addEventListener("resize",resize);
+function baseSize(i){const p=P[i],c=Math.log1p(cites[i]);if(p.kind==="ours")return 15;if(p.kind==="background")return 1.5+Math.min(2.2,c*.25);if(p.kind==="linked")return 1.9+Math.min(3.2,c*.36);if(p.kind==="quote")return 4.2;if(p.kind==="author"||p.follow)return 3.2+Math.min(3.6,c*.5);return 2.3+Math.min(4.2,c*.55)}
+function refresh(){
+ const dim=S.hits||S.nbrs;const set=dim?new Set(dim):null;const pin=new Set(S.pins);const emph=new Set([...(S.emph||[]),...(S.focusN||[])]);
+ for(let i=0;i<N;i++){const p=P[i];let vis=1;
+  if(p.kind==="ours"&&!S.showOur)vis=0;if(p.kind==="background"&&!S.showBg)vis=0;if(p.kind==="author"&&!S.showAu)vis=0;if(p.kind==="linked"&&!S.showLk)vis=0;if(p.kind==="quote"&&!S.showJq)vis=0;
+  if(p.year&&(p.year<S.y0||p.year>S.y1)&&p.kind!=="ours")vis=0;if(!passFilt(p))vis=0;
+  S.hide[i]=vis?0:1;
+  const c=colourOf(i,S.lens);aCol[3*i]=c[0];aCol[3*i+1]=c[1];aCol[3*i+2]=c[2];
+  aShape[i]=p.kind==="ours"?2:(p.kind==="author"||p.follow)?3:p.kind==="background"?1:0;
+  let sz=baseSize(i),al=p.has_abs?1:.55;
+  if(set){if(set.has(i)){sz*=1.6;al=1}else al*=.4}
+  if(emph.has(i)){sz=Math.max(sz,sz*1.5);al=1}
+  if(i===S.sel||pin.has(i)){sz=Math.max(sz,14);al=1}
+  aSize[i]=vis?sz:0;aAlpha[i]=vis?al:0;aPulse[i]=(i===S.sel||pin.has(i))?1:0}
+ for(const a of["aColor","aSize","aShape","aAlpha","aPulse"])geo.attributes[a].needsUpdate=true;
+ let nVis=0;for(let i=0;i<N;i++)if(!S.hide[i])nVis++;geo.setDrawRange(0,nVis);invalidate(true);
+ drawLegend();drawLines();if(S.links)buildLinks()}
+function drawLegend(){const L=$("leg"),T=$("legT");let h="";
+ if(S.lens==="cluster"){T.textContent="Clusters (named by content words)";const o=[...CL].sort((a,b)=>b.size-a.size);for(const c of o)h+=`<div class="row" data-c="${c.id}"><span class="sw" style="background:rgb(${cCol[c.id].map(x=>x*255|0)})"></span><span>${esc(c.name)} <span class="meta">${c.size}</span></span></div>`}
+ else if(S.lens==="evidence"){T.textContent="Evidence kind (cited items with facets)";for(const k of EVK)h+=`<div class="row"><span class="sw" style="background:rgb(${evCol[k].map(x=>x*255|0)})"></span>${esc(k)}</div>`;h+=`<div class="row"><span class="sw" style="background:#61666f"></span>no facet</div>`}
+ else if(S.lens==="year"){T.textContent="Year";h='<div class="meta">blue = older, orange = newer</div>'}
+ else if(S.lens==="cites"){T.textContent="Citation count";h='<div class="meta">dark = few, bright = many</div>'}
+ else if(S.lens==="mix"){T.textContent="Field-mix lens";h='<div class="meta">Brighter clusters contain more kinds of labelled fields (entropy in bits, from cited items with facets). A number only, never a label.</div>'}
+ else{T.textContent="Kinds";h='<div class="row"><span class="sw" style="background:#ff7366"></span>your marked items</div><div class="row"><span class="sw" style="background:#ffd14d"></span>by followed authors</div><div class="row"><span class="sw" style="background:#8cbfff"></span>in your collection</div><div class="row"><span class="sw" style="background:#eda1c2"></span>quotations</div><div class="row"><span class="sw" style="background:#737f94"></span>other items</div>'}
+ L.innerHTML=h;L.querySelectorAll("[data-c]").forEach(e=>e.onclick=()=>{const id=+e.dataset.c;S.nbrs=P.map((p,i)=>p.cluster===id?i:-1).filter(i=>i>=0);S.hits=null;focusSet(S.nbrs);refresh()})}
+function centroid(ix){const c=new THREE.Vector3();ix.forEach(i=>c.add(new THREE.Vector3(POS[3*i],POS[3*i+1],POS[3*i+2])));return c.multiplyScalar(1/Math.max(1,ix.length))}
+function focusSet(ix){if(!ix.length)return;const c=centroid(ix);let m=0;ix.forEach(i=>{m=Math.max(m,c.distanceTo(new THREE.Vector3(POS[3*i],POS[3*i+1],POS[3*i+2])))});flyTo(c,Math.max(25,m*2.2),900)}
+function pv(i){return new THREE.Vector3(POS[3*i],POS[3*i+1],POS[3*i+2])}
+let lineSpec=[],focusSpec=[];
+function drawLines(){invalidate();const a=[],c=[];for(const [i,j,col] of lineSpec.concat(focusSpec)){const u=pv(i),v=pv(j);a.push(u.x,u.y,u.z,v.x,v.y,v.z);c.push(...col,...col)}
+ lineGeo.setAttribute("position",new THREE.Float32BufferAttribute(a,3));lineGeo.setAttribute("color",new THREE.Float32BufferAttribute(c,3))}
+// links and pull
+const BASE=Float32Array.from(POS);let NB=D.nbrs;const VEC0=VEC,R0=R,NB0=NB,DIM0=DIM;
+const NB0F=Int32Array.from(NB0.flat());
+const nlGeo=new THREE.BufferGeometry();const nlines=new THREE.LineSegments(nlGeo,new THREE.LineBasicMaterial({color:0x8fa8d8,transparent:true,opacity:.35,depthWrite:false}));nlines.frustumCulled=false;nlines.visible=false;scene.add(nlines);
+function nbrList(i,k){return NB[i].filter(j=>P[j].kind!=="ours").slice(0,k)}
+function buildLinks(){const k=+$("lk").value,mut=$("lmut").checked;const a=[];const seen=new Set();
+ for(let i=0;i<N;i++){if(S.hide[i]||P[i].kind==="ours")continue;for(const j of nbrList(i,k)){if(S.hide[j])continue;if(mut&&!nbrList(j,k).includes(i))continue;const key=i<j?i*N+j:j*N+i;if(seen.has(key))continue;seen.add(key);a.push(POS[3*i],POS[3*i+1],POS[3*i+2],POS[3*j],POS[3*j+1],POS[3*j+2])}}
+ nlGeo.setAttribute("position",new THREE.Float32BufferAttribute(a,3));S.nlCount=a.length/6}
+$("bLinks").onclick=()=>{S.links=!S.links;$("bLinks").classList.toggle("on",S.links);$("linkset").style.display=S.links?"block":"none";nlines.visible=S.links;if(S.links)buildLinks()};
+$("lk").oninput=e=>{$("lkv").textContent=e.target.value;buildLinks()};$("lmut").onchange=buildLinks;
+const PULL={on:false,i:-1,cur:null,moved:false,plane:new THREE.Plane(),ray:new THREE.Raycaster()};
+const THREADS=[];const HW=[1,.6,.34,.18,.08];
+function hopsFrom(i,K=5,maxH=4){const h=new Map([[i,0]]);let fr=[i];for(let d=1;d<=maxH;d++){const nx=[];for(const u of fr)for(const v of nbrList(u,K)){if(!h.has(v)){h.set(v,d);nx.push(v)}}fr=nx}return h}
+$("bPull").onclick=()=>{PULL.on=!PULL.on;$("bPull").classList.toggle("on",PULL.on);if(PULL.on){S.selMode=false;$("bSel").classList.remove("on");$("hint").textContent="Pull mode: drag any item. Pull as many threads as you like, they stay until you release them. The panel shows what emerges.";if(!S.links)$("bLinks").click()}else{$("hint").textContent=HINT0}};
+const HINT0="drag to orbit · right-drag to pan · scroll to zoom · double-click an item to fly to it · R for home";
+function recompute(){POS.set(BASE);for(const th of THREADS)for(const [j,h] of th.hops){const w=HW[h];POS[3*j]+=th.off.x*w;POS[3*j+1]+=th.off.y*w;POS[3*j+2]+=th.off.z*w}geo.attributes.position.needsUpdate=true;invalidate(true);if(S.links)buildLinks();drawLines()}
+function pullStart(i){let th=THREADS.find(x=>x.i===i);if(!th){th={i,hops:hopsFrom(i),off:new THREE.Vector3()};THREADS.push(th)}PULL.cur=th;PULL.moved=false;PULL.i=i;const n=new THREE.Vector3();cam.getWorldDirection(n);const p0=pv(i);PULL.plane.setFromNormalAndCoplanarPoint(n,p0);PULL.p0=p0;PULL.off0=th.off.clone()}
+function pullMove(e){const r=cv.getBoundingClientRect();const m=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);PULL.ray.setFromCamera(m,cam);const p=new THREE.Vector3();if(!PULL.ray.ray.intersectPlane(PULL.plane,p))return;PULL.moved=true;PULL.cur.off.copy(PULL.off0).add(p.sub(PULL.p0));recompute()}
+function pullPanel(){let h=`<div class="meta" style="margin-bottom:8px">${THREADS.length} pulled thread${THREADS.length>1?"s":""}. Items move by how many links they are from a pulled item, and threads add together.</div>`;
+ const reach=new Map();THREADS.forEach((th,k)=>{for(const [j,hp] of th.hops)if(hp>0){const r=reach.get(j)||[];r.push(k);reach.set(j,r)}});
+ THREADS.forEach((th,k)=>{const byH=[0,0,0,0,0];for(const [j,hp] of th.hops)byH[hp]++;const cs={};for(const [j,hp] of th.hops)if(hp>0)cs[P[j].cluster]=(cs[P[j].cluster]||0)+1;
+  h+=`<div style="border-top:1px solid var(--line);padding:6px 0"><b>${k+1}. <a class="pl" data-j="${th.i}">${esc(P[th.i].title.slice(0,70))}</a></b><div class="meta">${byH[1]} items 1 link away, ${byH[2]} at 2, ${byH[3]+byH[4]} further. ${Object.entries(cs).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>esc(CL[c].name)+" ("+n+")").join("; ")}</div><button data-r="${k}" style="margin-top:4px">Release this thread</button></div>`});
+ const both=[...reach].filter(([j,r])=>r.length>1);
+ if(THREADS.length>1){h+=`<div style="border-top:1px solid var(--line);padding:6px 0"><b>Moved by more than one thread: ${both.length}</b><div class="meta">Items reachable from several pulled threads sit between them.</div>${both.slice(0,8).map(([j,r])=>`<div><a class="pl" data-j="${j}">${esc(P[j].title.slice(0,80))}</a> <span class="meta">${P[j].year||""} · threads ${r.map(x=>x+1).join(", ")}</span></div>`).join("")}</div>`}
+ h+=`<div class="btns"><button id="plr">Release all</button></div>`;const e=$("pullp");e.innerHTML=h;e.style.display="block";
+ $("plr").onclick=pullReleaseAll;e.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>pullRelease(+b.dataset.r));e.querySelectorAll("[data-j]").forEach(a=>a.onclick=()=>{select(+a.dataset.j)})}
+function animateOff(ths,done){const starts=ths.map(th=>th.off.clone()),t0=performance.now();const step=()=>{const t=Math.min(1,(performance.now()-t0)/600),e=1-Math.pow(1-t,3);ths.forEach((th,k)=>th.off.copy(starts[k]).multiplyScalar(1-e));recompute();if(t<1)requestAnimationFrame(step);else done()};step()}
+function pullRelease(k){const th=THREADS[k];if(!th)return;animateOff([th],()=>{const x=THREADS.indexOf(th);if(x>=0)THREADS.splice(x,1);recompute();if(THREADS.length)pullPanel();else $("pullp").style.display="none"})}
+function pullReleaseAll(){if(!THREADS.length)return;const all=THREADS.slice();animateOff(all,()=>{THREADS.length=0;recompute();$("pullp").style.display="none"})}
+// controls
+let drag=null,ptrs=new Map(),lastClick={t:0,x:0,y:0,i:-1};
+cv.addEventListener("contextmenu",e=>e.preventDefault());
+cv.addEventListener("pointerdown",e=>{invalidate();cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});fly=null;
+ if(PULL.on&&e.button===0){const pi=pick(e.clientX,e.clientY);if(pi>=0&&P[pi].kind!=="ours"){pullStart(pi);drag={x:e.clientX,y:e.clientY,t:performance.now(),moved:0,btn:0,pull:true,sx:e.clientX,sy:e.clientY};return}}
+ drag={x:e.clientX,y:e.clientY,t:performance.now(),moved:0,btn:e.button,pan:e.button===2||e.button===1,sx:e.clientX,sy:e.clientY};cv.focus()});
+cv.addEventListener("pointermove",e=>{if(drag||ptrs.size)invalidate();
+ if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(drag&&drag.pull){if(Math.abs(e.clientX-drag.sx)+Math.abs(e.clientY-drag.sy)>3)pullMove(e);return}
+ if(drag&&ptrs.size===2){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(drag.pd){dist=Math.max(MIN_D,Math.min(600,dist*drag.pd/d))}drag.pd=d;drag.moved=99;return}
+ if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;drag.moved+=Math.abs(dx)+Math.abs(dy);
+  if(drag.pan||e.shiftKey&&false){const k=dist*.0016;const right=new THREE.Vector3().setFromMatrixColumn(cam.matrix,0),up=new THREE.Vector3().setFromMatrixColumn(cam.matrix,1);tgt.addScaledVector(right,-dx*k).addScaledVector(up,dy*k)}
+  else{yaw-=dx*.006;pitch=Math.max(-1.48,Math.min(1.48,pitch+dy*.006))}}
+ else hoverAt(e.clientX,e.clientY)});
+cv.addEventListener("pointercancel",e=>{ptrs.clear();drag=null});
+cv.addEventListener("pointerup",e=>{invalidate();ptrs.delete(e.pointerId);if(!drag)return;if(drag.pull){drag=null;if(PULL.moved)pullPanel();else{select(PULL.i);if(THREADS.length&&!THREADS.some(th=>th.off.length()>0))THREADS.splice(THREADS.findIndex(th=>th.i===PULL.i),1)}return}
+const q=drag;if(ptrs.size===0)drag=null;
+ if(q.moved<5&&performance.now()-q.t<400&&q.btn===0){const i=pick(e.clientX,e.clientY);
+  if(S.placing){S.regionC.copy(i>=0?pv(i):tgt);S.placing=false;S.regionOn=true;regionUpdate();return}
+  const now=performance.now();if(i>=0&&lastClick.i===i&&now-lastClick.t<350){flyTo(pv(i),26,900)}
+  lastClick={t:now,i};
+  if(S.selMode){if(i>=0){togglePin(i);if(S.pins.includes(i))focusPaper(i);else clearFocus()}else clearFocus()}else if(i>=0){if(e.shiftKey)togglePin(i);else select(i)}else{select(-1)}}});
+cv.addEventListener("wheel",e=>{e.preventDefault();invalidate();const d=Math.max(-1,Math.min(1,(e.deltaMode===1?e.deltaY/3:e.deltaY/100)));zoomT=Math.max(MIN_D,Math.min(600,(zoomT==null?dist:zoomT)*Math.exp(d*.07)));fly=null},{passive:false});
+const MIN_D=12;const keys=new Set();addEventListener("keydown",e=>{if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;
+ const k=e.key.toLowerCase();if(k==="r"||k==="home")goHome();else if(k==="escape"){if($("sres").style.display==="block"){closeSres();return}if(S.selMode&&S.focus>=0){clearFocus();return}if($("ana").style.display==="block"){$("ana").style.display="none";hideBack()}else select(-1)}else if(k==="p")$("bPass").click();else if(k==="b"){const i=S.sel>=0?S.sel:S.hover;if(i>=0&&P[i].kind!=="ours"){(e.shiftKey?toggleStar(i):toggleBM(i));if(S.sel===i)card(i)}}else if(k==="/"){e.preventDefault();if($("bChat").style.display==="none")return;openChat()}else{keys.add(k);invalidate()}});
+addEventListener("keyup",e=>{keys.delete(e.key.toLowerCase());invalidate()});addEventListener("blur",()=>{keys.clear();invalidate()});
+function goHome(){if(THREADS.length)pullReleaseAll();yaw=HOME.yaw;pitch=HOME.pitch;flyTo(HOME.t,HOME.dist,1100);S.nbrs=null;S.hits=null;lineSpec=[];refresh()}
+$("bHome").onclick=goHome;
+function project(i){const v=pv(i).project(cam);return[(v.x*.5+.5)*cv.clientWidth,(-v.y*.5+.5)*cv.clientHeight,v.z]}
+function pick(cx,cy){const r=cv.getBoundingClientRect();const x=cx-r.left,y=cy-r.top;let best=-1,bd=14*14+1,bz=2;
+ for(let i=0;i<N;i++){if(S.hide[i])continue;const [px,py,pz]=project(i);if(pz>1||pz<-1)continue;const d=(px-x)**2+(py-y)**2;const rad=Math.max(10,aSize[i]*.8);if(d<Math.max(bd,rad*rad)&&d<bd+1e-6&&(d<bd||pz<bz)){bd=d;bz=pz;best=i}}return best}
+function hoverAt(cx,cy){const i=pick(cx,cy);if(i!==S.hover){S.hover=i;const t=$("tip");if(i<0)t.style.display="none";else{const p=P[i];t.style.display="block";t.textContent=p.title.slice(0,110)+(p.year?" ("+p.year+")":"")}cv.style.cursor=i>=0?"pointer":"grab"}
+ const t=$("tip");if(S.hover>=0){const r=cv.getBoundingClientRect();t.style.left=(cx-r.left+14)+"px";t.style.top=(cy-r.top+14)+"px"}}
+// selection and card
+function select(i){S.sel=i;S.nbrs=null;S.emph=S.pins.slice();lineSpec=[];if(i>=0){const nb=NB[i].filter(j=>P[j].kind!=="ours").slice(0,10);S.nbrs=[i,...nb];S.emph=S.emph.concat(nb);lineSpec=nb.map(j=>[i,j,[.5,.65,1]])}
+ S.hits=null;card(i);refresh();if(i>=0&&XL.on&&$("xl").style.display==="block")xlRun(i,false)}
+function focusPaper(i){S.focus=i;const nb=nbrList(i,8);S.focusN=nb;focusSpec=nb.map(j=>[i,j,[.55,.8,1]]);card(i);refresh()}
+function clearFocus(){S.focus=-1;S.focusN=[];focusSpec=[];$("card").style.display="none";refresh()}
+function togglePin(i){const k=S.pins.indexOf(i);if(k>=0)S.pins.splice(k,1);else{if(S.pins.length>=6)S.pins.shift();S.pins.push(i)}pinsUI();refresh()}
+function card(i){const c=$("card");if(i<0){c.style.display="none";return}const p=P[i];c.style.display="block";
+ const cl=CL[p.cluster];let h=`<h3>${esc(p.title)}</h3><div class="meta">${esc((p.au||p.authors||"").slice(0,160))}${p.year?" · "+p.year:""}${p.venue?" · "+esc(p.venue):""}</div>`;
+ h+=`<div>${p.kind==="ours"?'<span class="tag own">your marked item</span>':p.kind==="cited"?'<span class="tag">cited by '+esc(p.docs.join(", "))+'</span>':p.kind==="author"?'<span class="tag" style="border-color:var(--gold);color:var(--gold)">followed author</span>':p.kind==="quote"?'<span class="tag" style="border-color:#eda1c2;color:#eda1c2">quotations</span><span class="tag">from your notes, not yet checked against the book</span>':p.kind==="linked"?'<span class="tag" style="border-color:#73d9cc;color:#73d9cc">'+(p.link.rel==="topic"?"":esc(p.link.rel)+' ')+esc(p.link.seed_title)+'</span>'+(p.link.sim!=null&&p.link.sim<.55?'<span class="tag">weak topical link ('+p.link.sim+')</span>':''):'<span class="tag">other items</span>'}${(p.follow||[]).map(n=>'<span class="tag" style="border-color:var(--gold);color:var(--gold)">by '+esc(n)+'</span>').join("")}${p.pos?Object.values(p.pos).includes("first")?'<span class="tag">first-author item</span>':'':''}<span class="tag">cluster: ${esc(cl.name)}</span>${p.cites?'<span class="tag">'+p.cites+" citations</span>":""}${p.doi?`<a class="tag" href="https://doi.org/${esc(p.doi)}" target="_blank" rel="noopener">doi</a>`:""}${!p.doi&&p.url?`<a class="tag" href="${esc(p.url)}" target="_blank" rel="noopener">link</a>`:""}</div>`;
+ if(p.facet){const f=p.facet;h+=`<div class="abs"><b>Structure.</b> ${esc(f.core)}</div><div>${f.ops.map(o=>'<span class="tag">'+esc(o)+"</span>").join("")}${f.scales.map(o=>'<span class="tag">'+esc(o)+"</span>").join("")}${f.ev?'<span class="tag">evidence: '+esc(f.ev)+"</span>":""}</div>`}
+ if(p.kind==="quote"){h+=`<div class="q" style="font-family:var(--display);font-size:16px;line-height:1.5">“${esc(p.qt)}”<div class="meta" style="font-family:var(--ui)">${esc(p.venue)}${p.pg?" · p. "+esc(p.pg):""}</div></div>`+(p.note?`<div class="meta">Your note: ${esc(p.note)}</div>`:"")+(p.parent&&PIDX.has(p.parent)?`<div class="meta"><a class="pl" data-par="${esc(p.parent)}">Open the book record</a></div>`:"")}
+ else h+=`<div class="abs">${esc(p.abstract||"(no abstract available)")}${p.abstract&&p.abstract.length>=640?"…":""}</div>`;
+ if(p.jq&&p.jq.length)h+=`<h4 style="margin:10px 0 4px" class="meta">FROM YOUR NOTES (${p.jq.length} unverified quotes)</h4>`+p.jq.slice(0,12).map(q=>`<div class="q" style="font-size:13px">“${esc(q.t)}”<div class="meta"><a class="pl" data-jqid="${esc(q.id)}">show on map</a>${q.pg?" · p. "+esc(q.pg):""}</div></div>`).join("");
+ if(p.quotes.length)h+=p.quotes.map(q=>`<div class="q">“${esc(q.t)}”<div class="meta">${esc(q.l)} · verified</div></div>`).join("");
+ if(p.kind==="ours"){h+=`<div class="meta">${p.n_passages} passages. Press Passages to list them below.</div>`;}
+ if(p.why&&p.why.length)h+=`<div class="meta">Included because: ${esc(p.why.join("; "))}</div>`;
+ h+=`<div class="btns"><button id="cf1">Fly here</button><button id="cp1">${S.pins.includes(i)?"Unpin":"Pin"}</button><button id="cbm">${isBm(p.id)?"Bookmarked":"Bookmark"}</button><button id="cst">${isStar(p.id)?"★ Starred":"☆ Star"}</button><button id="cr1">Sphere here</button>${p.kind==="ours"?"":'<button id="cl1">Find similar</button>'}<button id="cxl" title="Link this item to 1 to 10 items in other fields that connect to it in unexpected ways">Cross-field links</button>${(p.follow||[]).map((n,k)=>'<button class="cap" data-k="'+k+'">Profile: '+esc(n)+'</button>').join("")}</div>`;
+ const nb=NB[i].filter(j=>P[j].kind!=="ours").slice(0,6);h+=`<h4 style="margin:10px 0 4px" class="meta">NEAREST PAPERS (hub-corrected)</h4>`+nb.map(j=>`<div><a class="pl" data-j="${j}">${esc(P[j].title.slice(0,90))}</a> <span class="meta">${P[j].year||""}</span></div>`).join("");
+ c.innerHTML=h;c.scrollTop=0;c.querySelectorAll("[data-par]").forEach(a=>a.onclick=()=>{const j=PIDX.get(a.dataset.par);if(j!=null){select(j);flyTo(pv(j),28,800)}});c.querySelectorAll("[data-jqid]").forEach(a=>a.onclick=()=>{const j=PIDX.get(a.dataset.jqid);if(j!=null){select(j);flyTo(pv(j),24,800)}});
+ $("cf1").onclick=()=>flyTo(pv(i),26,800);$("cp1").onclick=()=>{togglePin(i);card(i)};$("cbm").onclick=()=>{if(p.kind==="ours")return;$("cbm").textContent=toggleBM(i)?"Bookmarked":"Bookmark"};$("cst").onclick=()=>{if(p.kind==="ours")return;$("cst").textContent=toggleStar(i)?"★ Starred":"☆ Star"};c.querySelectorAll(".cap").forEach(b=>b.onclick=()=>openProfile(p.follow[+b.dataset.k]));
+ $("cr1").onclick=()=>{S.regionC.copy(pv(i));S.regionOn=true;regionUpdate()};
+ $("cxl").onclick=()=>xlOpen(i);
+ const cl1=$("cl1");if(cl1)cl1.onclick=()=>{S.nbrs=[i,...NB[i].filter(j=>P[j].kind!=="ours").slice(0,30)];refresh();focusSet(S.nbrs)};
+ c.querySelectorAll("a.pl").forEach(a=>a.onclick=()=>{const j=+a.dataset.j;select(j);flyTo(pv(j),28,800)})}
+// pins, between, explain
+function csls(vec,j,rq){return 2*cosV(vec,j)-(1-R[j])*0-(R[j])-rq}
+function between(ids,k=8){const v=new Float32Array(DIM);ids.forEach(i=>{for(let d=0;d<DIM;d++)v[d]+=VEC[i*DIM+d]});let n=0;for(let d=0;d<DIM;d++)n+=v[d]*v[d];n=Math.sqrt(n);for(let d=0;d<DIM;d++)v[d]/=n;
+ const sc=[];for(let j=0;j<N;j++){if(ids.includes(j)||P[j].kind==="ours")continue;sc.push([j,cosV(v,j)-.5*R[j]])}sc.sort((a,b)=>b[1]-a[1]);return sc.slice(0,k).map(x=>x[0])}
+function explain(a,b){const A=P[a],B=P[b];const out=[];const c=cos(a,b);out.push(`similarity of text vectors ${c.toFixed(2)}; hub-corrected score ${(2*(1-c)-R[a]-R[b]).toFixed(2)} (lower is closer)`);
+ const na=new Set(NB[a]),nb=NB[b];const sh=nb.filter(j=>na.has(j)&&P[j].kind!=="ours");if(sh.length)out.push(`${sh.length} shared nearest items: `+sh.slice(0,3).map(j=>P[j].title.slice(0,50)).join("; "));
+ out.push(A.cluster===B.cluster?"both sit in the cluster "+CL[A.cluster].name:"clusters differ: "+CL[A.cluster].name+" vs "+CL[B.cluster].name);
+ if(A.facet&&B.facet){const so=A.facet.ops.filter(x=>B.facet.ops.includes(x));const sd=A.facet.dims.filter(x=>B.facet.dims.includes(x));const ss=A.facet.scales.filter(x=>B.facet.scales.includes(x));
+  out.push(so.length?"shared operations: "+so.join(", "):"operations do not overlap ("+A.facet.ops.join(", ")+" vs "+B.facet.ops.join(", ")+")");if(sd.length)out.push("shared quantity dimensions: "+sd.join(", "));if(ss.length)out.push("shared scales: "+ss.join(", "));
+  if(A.facet.ev&&B.facet.ev)out.push("evidence kinds: "+A.facet.ev+" and "+B.facet.ev)}
+ const shd=A.docs.filter(d=>B.docs.includes(d));if(shd.length)out.push("both cited by: "+shd.join(", "));
+ const cp=D.cand.find(x=>(x[0]===a&&x[1]===b)||(x[0]===b&&x[1]===a));if(cp)out.push(`listed as a connection candidate (kind ${cp[3]}, score ${cp[2]})`);
+ return out}
+function pinsUI(){const e=$("pins");if(!S.pins.length){S.emph=[];if(S.selMode){e.style.display="block";e.innerHTML="<h4>Select &amp; connect</h4><div>Click two or more items on the map. This panel will then list how they may connect and the items that lie between them.</div>"}else e.style.display="none";lineSpec=[];S.hits=null;return}e.style.display="block";
+ let h=`<h4>Selected items (${S.pins.length}/6)</h4>`+S.pins.map(i=>`<div><a class="pl" data-j="${i}">${esc(P[i].title.slice(0,80))}</a> <a class="pl" data-x="${i}">×</a></div>`).join("");
+ if(S.pins.length>=2){const b=between(S.pins);const ex=[];for(let x=0;x<S.pins.length;x++)for(let y=x+1;y<S.pins.length;y++)ex.push([S.pins[x],S.pins[y]]);ex.splice(4);
+  h+=`<h4 style="margin-top:10px">Why these two may connect</h4>`+ex.map(([a,c])=>"<ul style='margin:2px 0 6px 16px;padding:0;font-size:12.5px'>"+explain(a,c).map(t=>"<li>"+esc(t)+"</li>").join("")+"</ul>").join("");
+  h+=`<div class="btns"><button id="pb1">Search literature in the connecting space</button><button id="pb2">Ask Claude how they connect</button><button id="pb3">Clear</button></div><div class="btns"><button id="pb4" style="border-color:var(--acc);color:var(--acc)">Deep analysis…</button></div><h4 style="margin-top:10px">Items between them</h4>`+b.map(j=>`<div><a class="pl" data-j="${j}">${esc(P[j].title.slice(0,80))}</a> <span class="meta">${P[j].year||""}</span></div>`).join("");
+  lineSpec=[];for(let x=0;x<S.pins.length;x++)for(let y=x+1;y<S.pins.length;y++)lineSpec.push([S.pins[x],S.pins[y],[1,.8,.3]]);b.forEach(j=>{let bp=S.pins[0],bc=-9;S.pins.forEach(p=>{const c=cos(p,j);if(c>bc){bc=c;bp=p}});lineSpec.push([bp,j,[.5,.6,.8]])});S.emph=b.concat(S.pins);}
+ else{S.hits=null;S.emph=S.pins.slice();lineSpec=[]}
+ e.innerHTML=h;{const b1=$("pb1");if(b1){b1.onclick=()=>{const c=centroid(S.pins);let m=0;S.pins.forEach(i=>{m=Math.max(m,c.distanceTo(pv(i)))});S.regionC.copy(c);S.regionR=Math.max(8,Math.min(60,m*1.1));S.regionOn=true;flyTo(c,Math.max(40,m*3),900);regionUpdate()};$("pb2").onclick=()=>{openChat();$("ci").value="How might the selected items connect? Use papers_between and explain_pair, and describe the connecting space by structure.";sendChat()};$("pb3").onclick=()=>{S.pins=[];pinsUI();refresh()};$("pb4").onclick=openAnalysis}}e.querySelectorAll("[data-j]").forEach(a=>a.onclick=()=>{select(+a.dataset.j);flyTo(pv(+a.dataset.j),28,700)});e.querySelectorAll("[data-x]").forEach(a=>a.onclick=()=>togglePin(+a.dataset.x))}
+// region
+$("bLegend").onclick=()=>{$("legend").classList.toggle("open");$("bLegend").classList.toggle("on")};
+$("bSel").onclick=()=>{S.selMode=!S.selMode;$("bSel").classList.toggle("on",S.selMode);$("hint").textContent=S.selMode?"Select mode: click items to add them (up to 6), click again to remove. Then use the buttons in the panel.":"drag to orbit · right-drag to pan · scroll to zoom · double-click an item to fly to it · R for home";if(S.selMode){$("card").style.display="none";pinsUI()}};
+$("bRegion").onclick=()=>{S.placing=!S.placing;$("bRegion").classList.toggle("on",S.placing);if(!S.placing)return;$("hint").style.display="block";$("hint").textContent="click a point or empty space to place the sphere centre"};
+function inRegion(){const out=[];for(let i=0;i<N;i++)if(!S.hide[i]&&pv(i).distanceTo(S.regionC)<S.regionR)out.push(i);return out}
+function regionStats(ix){const k={ours:0,cited:0,background:0,author:0,linked:0,quote:0};ix.forEach(i=>k[P[i].kind]++);const yrs=ix.map(i=>P[i].year).filter(Boolean).sort();const cc={};ix.forEach(i=>cc[P[i].cluster]=(cc[P[i].cluster]||0)+1);
+ const vol=4/3*Math.PI*S.regionR**3,all=4/3*Math.PI*110**3;const dens=ix.length/vol/(N/all);
+ return{count:ix.length,ours:k.ours,cited:k.cited,uncited:k.background,followed_authors:k.author,linked:k.linked,quotes:k.quote,own_share:ix.length?+(k.ours/ix.length).toFixed(3):0,median_year:yrs.length?yrs[yrs.length>>1]:null,density_vs_average:+dens.toFixed(2),clusters:Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,n])=>CL[c].name+" ("+n+")")}}
+function regionLive(el){sph.scale.setScalar(S.regionR);const ix=inRegion();S.hits=ix;const st=regionStats(ix);$("rv").textContent=S.regionR;
+ $("rstat").textContent=`${st.count} items: ${st.ours} marked, ${st.cited} in your collection. Density ${st.density_vs_average}× the map average (below 0.5 suggests a sparse region).`;
+ $("rcl").textContent=st.clusters.join("; ")||"empty";refresh()}
+function regionUpdate(){invalidate();sph.visible=S.regionOn;sph.position.copy(S.regionC);sph.scale.setScalar(S.regionR);$("bRegion").classList.remove("on");$("hint").style.display="";$("hint").textContent="drag to orbit · right-drag to pan · scroll to zoom · double-click an item to fly to it · R for home";
+ const ix=inRegion();S.hits=ix;const st=regionStats(ix);const e=$("region");e.style.display="block";
+ e.innerHTML=`<h4>Sphere</h4><label class="sm">radius <input type="range" id="rr" min="4" max="60" value="${S.regionR}"> <span id="rv">${S.regionR}</span></label><div id="rstat" style="margin:6px 0">${st.count} items: ${st.ours} marked, ${st.cited} in your collection. Density ${st.density_vs_average}× the map average (below 0.5 suggests a sparse region).</div><div class="meta" id="rcl">${st.clusters.map(esc).join("; ")||"empty"}</div><div id="jobnote" class="meta"></div><div class="btns"><button id="rg" style="border-color:var(--acc);color:var(--acc)">Probe this gap…</button><button id="rs">Ask Claude to search the literature here</button><button id="rj">Queue for Claude</button><button id="rd">Save request file</button><button id="rc">Close</button></div>`;
+ $("rr").oninput=e=>{S.regionR=+e.target.value;regionLive(e.target)};$("rc").onclick=()=>{S.regionOn=false;sph.visible=false;e.style.display="none";S.hits=null;refresh()};$("rd").onclick=saveRequest;$("rg").onclick=probeGap;$("rj").onclick=queueJob;$("rs").onclick=()=>{openChat();$("ci").value="Search the literature for items that would fill this sphere region. Describe by structure.";sendChat()};refresh()}
+function regionCtx(){const ix=inRegion();return{centre:[...S.regionC.toArray().map(x=>+x.toFixed(1))],radius:S.regionR,stats:regionStats(ix),sample_titles:ix.filter(i=>P[i].kind!=="ours").slice(0,12).map(i=>P[i].title)}}
+let DB=null;(async()=>{try{DB=await claude.use("db")}catch(e){}})();
+async function queueJob(){if(!DB){alert("Shared database is unavailable in this view.");return}const id="job"+Date.now().toString(36);
+ try{await DB.collection("jobs").doc(id).set({kind:"region_search",status:"queued",created:Date.now(),region:regionCtx(),pins:S.pins.map(i=>({id:P[i].id,title:P[i].title.slice(0,120)}))});$("jobnote").textContent="Queued as "+id+". Ask Claude in the terminal session to process queued jobs."}catch(e){$("jobnote").textContent="Could not queue: "+(e&&e.message||e)}}
+async function saveRequest(){const dl=await (typeof claude!=="undefined"?claude.use("downloads"):Promise.resolve(null)).catch(()=>null);const body=JSON.stringify({kind:"region_search",created:new Date().toISOString(),region:regionCtx(),pins:S.pins.map(i=>({id:P[i].id,title:P[i].title}))},null,1);
+ if(dl){try{await dl.save({filename:"region_search_request.json",data:body})}catch(e){}}else alert("Saving is unavailable in this view.")}
+// thin spots
+const GP=D.gaps.map(g=>new THREE.Vector3(...g.pos));let gapMesh=null;
+$("bGap").onclick=()=>{const on=!$("bGap").classList.contains("on");$("bGap").classList.toggle("on",on);if(gapMesh){scene.remove(gapMesh);gapMesh=null}const e=$("gapl");S.gapList=on;
+ if(!on){e.style.display="none";return}
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(GP.flatMap(v=>v.toArray()),3));
+ gapMesh=new THREE.Points(g,new THREE.PointsMaterial({color:0xffd166,size:9,sizeAttenuation:false,transparent:true,opacity:.9,depthWrite:false}));scene.add(gapMesh);
+ e.style.display="block";const GO=D.gaps.map((g,k)=>k).sort((a,b)=>(D.gaps[b].split-D.gaps[a].split)||(D.gaps[b].ratio-D.gaps[a].ratio));const GLO=Math.min(...D.gaps.map(g=>g.ratio)),GHI=Math.max(...D.gaps.map(g=>g.ratio)),GTIE=D.gaps.filter(g=>g.ratio===GLO).length,GSPLIT=D.gaps.filter(g=>g.split).length;e.innerHTML=`<h4>Thin spots in the text-vector space</h4><div class="meta" style="margin-bottom:6px">${D.gaps.length} midpoints between near neighbours where the closest item is far away, with ratios from ${GLO.toFixed(2)} to ${GHI.toFixed(2)}. ${GTIE} sit at ${GLO.toFixed(2)}, so the spots work best as one set of leads that can be checked in any order. Time splits (${GSPLIT}, where the two sides are over 15 years apart) come first. Each spot is a first lead for a literature search.</div>`+GO.map(k=>{const g=D.gaps[k];return `<div><a class="pl" data-g="${k}">ratio ${g.ratio.toFixed(2)}${g.split?" · time split":""}</a><div class="meta">${esc(P[g.a].title.slice(0,60))} (${P[g.a].year||"?"}) ⟷ ${esc(P[g.b].title.slice(0,60))} (${P[g.b].year||"?"})</div></div>`}).join("");
+ e.querySelectorAll("[data-g]").forEach(a=>a.onclick=()=>{const g=D.gaps[+a.dataset.g];S.regionC.copy(GP[+a.dataset.g]);S.regionR=14;S.regionOn=true;flyTo(GP[+a.dataset.g],45,900);S.pins=[g.a,g.b];pinsUI();regionUpdate()})};
+// passages
+$("bPass").onclick=()=>{S.pass=!S.pass;$("bPass").classList.toggle("on",S.pass);if(S.pass&&S.sel>=0&&P[S.sel].kind==="ours"){const p=P[S.sel];const c=$("card").querySelector(".pb");c.insertAdjacentHTML("beforeend",`<h4 class="meta">PASSAGES</h4>`+p.passages.slice(0,40).map(x=>`<div class="q">${esc(x.t)}<div class="meta">${esc(x.s)}${x.p?" · p."+x.p:""}</div></div>`).join(""))}else if(S.pass)$("hint").textContent="select one of your marked items (diamonds), then press Passages to list its passages in the card"};
+// timeline
+const hc=$("hist"),hx=hc.getContext("2d");
+function drawHist(){const w=hc.clientWidth,h=hc.clientHeight;hc.width=w;hc.height=h;const b=new Array(127).fill(0);P.forEach(p=>{if(p.year&&p.year>=1900&&p.kind!=="ours")b[p.year-1900]++});const m=Math.max(...b);hx.clearRect(0,0,w,h);
+ const cs=getComputedStyle(document.documentElement);hx.fillStyle=cs.getPropertyValue("--mut");b.forEach((n,k)=>{const x=k/127*w;const bh=n/m*h;const inr=1900+k>=S.y0&&1900+k<=S.y1;hx.globalAlpha=inr?.9:.25;hx.fillRect(x,h-bh,w/127,bh)});hx.globalAlpha=1;$("yl").textContent=S.y0+" to "+S.y1}
+function yr(){S.y0=Math.min(+$("y0").value,+$("y1").value);S.y1=Math.max(+$("y0").value,+$("y1").value);drawHist();refresh();{const fs=$("fshown");if(fs)fs.textContent=P.filter((p,i)=>p.kind!=="ours"&&!S.hide[i]).length}}
+$("y0").oninput=yr;$("y1").oninput=yr;$("y0").onchange=$("y1").onchange=()=>{if($("filt").style.display==="block")renderFilt()};
+$("lens").onchange=e=>{S.lens=e.target.value;if(S.lens==="aff"&&!LENS.on)$("hint").textContent="Affinity needs a lens. Apply one from the Lens button; until then the map keeps its cluster colours.";refresh()};
+$("showOur").onchange=e=>{S.showOur=e.target.checked;refresh()};$("showBg").onchange=e=>{S.showBg=e.target.checked;refresh()};$("showAu").onchange=e=>{S.showAu=e.target.checked;refresh()};$("showLk").onchange=e=>{S.showLk=e.target.checked;refresh()};$("showJq").onchange=e=>{S.showJq=e.target.checked;refresh()};$("showStars").onchange=e=>{S.showStars=e.target.checked;invalidate(true)};
+// search (tf-idf)
+const deacc=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const tok=s=>deacc(s).match(/[a-z0-9]{2,}/g)||[];
+const DF=new Map(),TF=P.map(p=>{const au=(p.au||"")+" "+(p.authors||"")+" "+(p.ref||"");const t=tok(p.title+" "+p.title+" "+p.abstract+" "+(p.facet?p.facet.core:"")+" "+au+" "+au+" "+au+" "+(p.venue||"")+" "+(p.doi||"")+" "+(p.year||""));const m=new Map();t.forEach(w=>m.set(w,(m.get(w)||0)+1));m.forEach((_,w)=>DF.set(w,(DF.get(w)||0)+1));return m});
+const TERMS=[...DF.keys()];
+function search(q,k=12,own=false){const qs=tok(q);if(!qs.length)return[];
+ // each query word matches exactly, or as a prefix of a term when it has 3 or more letters
+ const exp=qs.map(w=>{const m=[[w,1]];if(w.length>=3)for(const t2 of TERMS)if(t2!==w&&t2.startsWith(w))m.push([t2,.5]);return m});
+ const sc=[];for(let i=0;i<N;i++){if(!own&&P[i].kind==="ours")continue;let s=0,hit=0;for(const alts of exp){let best=0;for(const [w,wt] of alts){const f=TF[i].get(w);if(f){const v=wt*Math.log(1+N/(DF.get(w)||1))*(f*2.2)/(f+1.2);if(v>best)best=v}}if(best>0){hit++;s+=best}}
+  if(hit===0)continue;s*=1+hit/exp.length;sc.push([i,s])}
+ sc.sort((a,b)=>b[1]-a[1]);return sc.slice(0,k).map(x=>x[0])}
+function closeSres(){$("sres").style.display="none"}
+function runSearch(){const q=$("q").value.trim();if(!q){closeSres();return}const all=search(q,400,true),h=all.slice(0,40);const e=$("sres");e.style.display="block";
+ e.innerHTML=`<div style="display:flex;align-items:center"><b style="flex:1;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)">${all.length>h.length?h.length+" of "+all.length:all.length} results</b><button id="sx" style="padding:1px 9px">×</button></div>`+(h.length?h.map(i=>`<div class="sr"><div class="t"><a class="pl" data-v="${i}">${esc(P[i].title.slice(0,110))}</a><div class="meta">${esc((P[i].au||P[i].authors||"").slice(0,90))} ${P[i].year||""} · ${esc(CL[P[i].cluster].name)}${P[i].kind==="ours"?" · your marked item":""}</div></div><button data-b="${i}" title="Add to your bookmarks">${isBm(P[i].id)?"Bookmarked":"Bookmark"}</button><button data-s="${i}" title="Star on the map">${isStar(P[i].id)?"★":"☆"}</button><button data-a="${i}">${S.pins.includes(i)?"Selected":"+ Select"}</button></div>`).join(""):'<div class="meta">No matches.</div>');
+ $("sx").onclick=closeSres;e.querySelectorAll("[data-v]").forEach(a=>a.onclick=()=>{const i=+a.dataset.v;flyTo(pv(i),28,800);if(S.selMode){S.hits=null;focusPaper(i)}else{select(i)}});
+ e.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{const i=+b.dataset.b;b.textContent=toggleBM(i)?"Bookmarked":"Bookmark"});e.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const i=+b.dataset.s;b.textContent=toggleStar(i)?"★":"☆"});
+ e.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const i=+b.dataset.a;if(!S.pins.includes(i))togglePin(i);b.textContent="Selected";if(!S.selMode){S.selMode=true;$("bSel").classList.add("on")}pinsUI();refresh()})}
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch();if(e.key==="Escape")closeSres()});
+document.addEventListener("pointerdown",e=>{if(!$("qw").contains(e.target))closeSres()});
+// chat
+let sample=null,chatHist=[];
+function disclose(ix){const o=ix.filter(i=>P[i].kind==="ours").length;return ix.length&&o/ix.length>=.3?`${o} of ${ix.length} results are from the viewer's own documents. `:""}
+const brief=i=>({id:P[i].id,title:P[i].title.slice(0,140),year:P[i].year,kind:P[i].kind,cluster:CL[P[i].cluster].name,structure:P[i].facet?P[i].facet.core.slice(0,200):undefined});
+const find=id=>P.findIndex(p=>p.id===id);
+const TOOLS=()=>[
+ {name:"search_papers",description:"Keyword search over item titles and abstracts. Returns up to 10 items. Own documents are excluded unless include_own is true.",inputSchema:{type:"object",properties:{query:{type:"string"},include_own:{type:"boolean"},k:{type:"number"}},required:["query"]},execute:a=>{const h=search(a.query,Math.min(10,a.k||8),!!a.include_own);S.hits=h;S.nbrs=null;refresh();if(h.length)focusSet(h);return{note:disclose(h),results:h.map(brief)}}},
+ {name:"open_paper",description:"Open one item by id and show its card.",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},execute:a=>{const i=find(a.id);if(i<0)throw new Error("unknown id");select(i);flyTo(pv(i),28,800);const p=P[i];return{...brief(i),abstract:(p.abstract||"").slice(0,500),cited_by:p.docs,quotes:p.quotes.slice(0,2)}}},
+ {name:"papers_like",description:"Nearest items to one item (hub-corrected). Own documents excluded.",inputSchema:{type:"object",properties:{id:{type:"string"},k:{type:"number"}},required:["id"]},execute:a=>{const i=find(a.id);if(i<0)throw new Error("unknown id");const nb=NB[i].filter(j=>P[j].kind!=="ours").slice(0,Math.min(10,a.k||8));S.nbrs=[i,...nb];lineSpec=nb.map(j=>[i,j,[.5,.65,1]]);refresh();return nb.map(brief)}},
+ {name:"papers_between",description:"Items that lie between two or three items in the vector space.",inputSchema:{type:"object",properties:{ids:{type:"array",items:{type:"string"}}},required:["ids"]},execute:a=>{const ix=a.ids.map(find).filter(i=>i>=0).slice(0,6);if(ix.length<2)throw new Error("need two valid ids");S.pins=ix;pinsUI();refresh();focusSet(ix);return between(ix,8).map(brief)}},
+ {name:"explain_pair",description:"Reasons two items may connect, from vector similarity, shared neighbours, clusters, and structure facets.",inputSchema:{type:"object",properties:{a:{type:"string"},b:{type:"string"}},required:["a","b"]},execute:a=>{const x=find(a.a),y=find(a.b);if(x<0||y<0)throw new Error("unknown id");return explain(x,y)}},
+ {name:"region_stats",description:"Statistics for the current sphere region, or for a sphere set by centre item id and radius.",inputSchema:{type:"object",properties:{center_id:{type:"string"},radius:{type:"number"}}},execute:a=>{if(a.center_id){const i=find(a.center_id);if(i<0)throw new Error("unknown id");S.regionC.copy(pv(i));S.regionOn=true;if(a.radius)S.regionR=Math.max(4,Math.min(60,a.radius));regionUpdate()}return regionCtx()}},
+ {name:"passages_of",description:"Passages of one of our own documents, optionally filtered by words.",inputSchema:{type:"object",properties:{id:{type:"string"},query:{type:"string"},k:{type:"number"}},required:["id"]},execute:a=>{const i=find(a.id);if(i<0||!P[i].passages)throw new Error("not an own document");let ps=P[i].passages;if(a.query){const qs=tok(a.query);ps=ps.map(x=>[x,qs.filter(w=>x.t.toLowerCase().includes(w)).length]).filter(x=>x[1]>0).sort((p,q)=>q[1]-p[1]).map(x=>x[0])}return ps.slice(0,Math.min(5,a.k||4))}},
+ {name:"set_lens",description:"Set and apply a lens: anchor item ids, operations, quantity dimensions, form_terms, evidence kinds, anchor_strength (0 to 8), tag_weight (0 to 3).",inputSchema:{type:"object",properties:{anchor_ids:{type:"array",items:{type:"string"}},ops:{type:"array",items:{type:"string"}},dims:{type:"array",items:{type:"string"}},form_terms:{type:"array",items:{type:"string"}},evidence:{type:"array",items:{type:"string"}},anchor_strength:{type:"number"},tag_weight:{type:"number"}}},execute:async a=>{setLensFrom(a);await applyLens();return"lens applied"}},
+ {name:"set_view",description:"Change the view. lens is one of cluster, year, kind, cites, evidence, mix. own is shown or hidden.",inputSchema:{type:"object",properties:{lens:{type:"string"},own:{type:"string"}}},execute:a=>{if(a.lens&&["cluster","year","kind","cites","evidence","mix"].includes(a.lens)){S.lens=a.lens;$("lens").value=a.lens}if(a.own){S.showOur=a.own!=="hidden";$("showOur").checked=S.showOur}refresh();return"ok"}}];
+const SYS=`You help a viewer navigate a map of research items. Describe every item and region by its structure: the operations it describes, its quantities and their dimensions, its scales, the kind of evidence it reports, and its citation position. Do not use discipline or field names to describe, label or group anything. Name clusters by what they describe. Report a field-mix score only if the viewer has turned on that lens, and then only as a number. Look items up with tools before stating anything about them. Quote only text returned by a tool, with its locator. The viewer's own documents are a few marked points inside a much larger literature. If a result set is more than a third the viewer's own work, say so first, with the count. Never invent item ids. Answer briefly, in plain sentences, and name items by title and year.`;
+function ctxBlock(){return"Current view: "+JSON.stringify({lens:S.lens,selected:S.sel>=0?brief(S.sel):null,pinned:S.pins.map(brief),sphere:S.regionOn?regionCtx():null,years:[S.y0,S.y1],reweighted_lens:LENS.on?LENS.spec:null}).slice(0,2000)+(S.anaMd&&S.pins.length>1?"\n\nAnalysis of the pinned selection:\n"+S.anaMd.slice(0,9000):"")}
+function log(cls,t){const d=document.createElement("div");d.className=cls;d.textContent=t;$("log").appendChild(d);$("log").scrollTop=1e9;return d}
+function openChat(){if($("bChat").style.display==="none"){$("hint").style.display="";$("hint").textContent="Chat is unavailable in this view. Use the Copy for Claude buttons instead.";return}$("chat").classList.add("open");$("ci").focus()}
+$("bChat").onclick=()=>$("chat").classList.toggle("open");
+let busy=false;
+async function sendChat(){const txt=$("ci").value.trim();if(!txt||busy||!sample)return;$("ci").value="";log("u","You: "+txt);chatHist.push({role:"user",content:txt});chatHist=chatHist.slice(-6);busy=true;$("cs").disabled=true;
+ const d=log("a","…");const msgs=[{role:"user",content:SYS+"\n\n"+ctxBlock()+"\n\n(Conversation follows. Answer the last message.)"},{role:"assistant",content:"Understood."},...chatHist.slice(0,-1),chatHist[chatHist.length-1]];
+ const used=[];const tools=TOOLS().map(t=>({...t,execute:async a=>{used.push(t.name);return t.execute(a||{})}}));
+ try{const r=await sample(msgs,{tools,modelTier:"default",cache:false,onText:({text})=>{d.textContent=text}});d.textContent=r.text;if(used.length)log("t","tools used: "+used.join(", "));chatHist.push({role:"assistant",content:r.text.slice(0,1500)})}
+ catch(e){d.textContent=e&&e.code==="not_granted"?"Chat is not enabled for this view.":"Chat error: "+(e&&e.message||e)}
+ setTimeout(()=>{busy=false;$("cs").disabled=false},3000)}
+$("cf").onsubmit=e=>{e.preventDefault();sendChat()};
+// panel chrome: every floating panel gets a title bar with minimise and close
+const CLOSERS={surp:()=>{$("surp").style.display="none"},views:()=>{$("views").style.display="none";$("bViews").classList.remove("on")},prof:()=>{$("prof").style.display="none"},bm:()=>{$("bm").style.display="none"},filt:()=>{$("filt").style.display="none";$("bFilt").classList.remove("on");document.body.classList.remove("fopen")},card:()=>select(-1),gapl:()=>{S.gapList=false;$("bGap").classList.remove("on");if(gapMesh){scene.remove(gapMesh);gapMesh=null}$("gapl").style.display="none"},pins:()=>{S.pins=[];S.hits=null;lineSpec=[];if(S.selMode)$("bSel").click();else{S.gapList=false;$("bGap").classList.remove("on");if(gapMesh){scene.remove(gapMesh);gapMesh=null}pinsUI()}refresh()},region:()=>{S.regionOn=false;sph.visible=false;$("region").style.display="none";S.hits=null;refresh()},pullp:()=>{$("pullp").style.display="none"},legend:()=>$("bLegend").click(),linkset:()=>$("bLinks").click(),chat:()=>$("chat").classList.remove("open"),xl:()=>xlClose(),prin:()=>prinClose(),rs:()=>resClose()};
+const TITLES={surp:"Newly close pairs",views:"Saved views",prof:"Followed authors",bm:"Library",filt:"Filters",card:"Item",gapl:"Thin spots",pins:"Selection",region:"Sphere",pullp:"Pulled item",legend:"Legend",linkset:"Link settings",chat:"Ask Claude",xl:"Cross-field links",prin:"Principles",rs:"Paste an idea"};
+for(const id of Object.keys(CLOSERS)){const el=$(id);const body=document.createElement("div");body.className="pb";while(el.firstChild)body.appendChild(el.firstChild);
+ const h=document.createElement("div");h.className="ph";h.innerHTML='<span class="pt">'+TITLES[id]+'</span><button class="pm" title="Minimise">–</button><button class="px" title="Close">×</button>';
+ el.appendChild(h);el.appendChild(body);
+ h.querySelector(".pm").onclick=()=>{el.classList.toggle("min");h.querySelector(".pm").textContent=el.classList.contains("min")?"+":"–"};
+ h.querySelector(".px").onclick=()=>CLOSERS[id]();
+ if(["card","pins","gapl","region","pullp","filt","bm","prof","views","surp","xl","prin","rs"].includes(id))Object.defineProperty(el,"innerHTML",{get(){return body.innerHTML},set(v){body.innerHTML=v;el.classList.remove("min");h.querySelector(".pm").textContent="–"}})}
+$("tc").onclick=()=>{const c=$("top").classList.toggle("collapsed");$("tc").textContent=c?"▼ menu":"▲"};
+{const hint=$("hint");let ht=null;const fade=()=>{hint.style.opacity=1;clearTimeout(ht);ht=setTimeout(()=>hint.style.opacity=0,9000)};new MutationObserver(fade).observe(hint,{childList:true,characterData:true,subtree:true});fade()}
+// back stack: leaving an analysis or gap probe for an item keeps it one click away
+let PARK=null;
+function parkAna(label,restore){const e=$("ana");PARK={scroll:e.scrollTop,restore,label};e.style.display="none";const b=$("anaBack");b.style.display="flex";b.querySelector("span").textContent="← "+label}
+function hideBack(){PARK=null;$("anaBack").style.display="none"}
+function restoreAna(){if(!PARK)return;const e=$("ana"),p=PARK;e.style.display="block";e.scrollTop=p.scroll;$("anaBack").style.display="none";try{p.restore()}catch(x){}}
+// deep analysis of a selection
+const GW=new Set("the of to in on an as we found small which and for are was is be by at or it its not but can may has had will would could should one two three new use used our all any these those thus via per vs et al with from that this these those their there which were have been also into than then such using used based study studies item results show shows shown between within over under after before about because while other more most some many each both only same different".split());
+function eig(G){const n=G.length;let A=G.map(r=>r.slice()),V=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+ for(let s=0;s<60;s++){let p=0,q=1,m=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(Math.abs(A[i][j])>m){m=Math.abs(A[i][j]);p=i;q=j}if(m<1e-12)break;
+  const th=.5*Math.atan2(2*A[p][q],A[q][q]-A[p][p]),c=Math.cos(th),s2=Math.sin(th);
+  for(let k=0;k<n;k++){const a=A[k][p],b=A[k][q];A[k][p]=c*a-s2*b;A[k][q]=s2*a+c*b}
+  for(let k=0;k<n;k++){const a=A[p][k],b=A[q][k];A[p][k]=c*a-s2*b;A[q][k]=s2*a+c*b}}
+ return A.map((r,i)=>r[i]).sort((a,b)=>b-a)}
+function analyze(ids){const n=ids.length,A={ids};
+ const c=new Float32Array(DIM);ids.forEach(i=>{for(let d=0;d<DIM;d++)c[d]+=VEC[i*DIM+d]});let nn=0;for(let d=0;d<DIM;d++)nn+=c[d]*c[d];nn=Math.sqrt(nn);for(let d=0;d<DIM;d++)c[d]/=nn;A.centroid=c;
+ A.cosm=ids.map(a=>ids.map(b=>cos(a,b)));let sum=0,cnt=0,mn=[1,0,0],mx=[-1,0,0];for(let x=0;x<n;x++)for(let y=x+1;y<n;y++){const v=A.cosm[x][y];sum+=v;cnt++;if(v<mn[0])mn=[v,x,y];if(v>mx[0])mx=[v,x,y]}
+ A.meanCos=sum/cnt;A.tight=mx;A.loose=mn;
+ const m=new Float32Array(DIM);ids.forEach(i=>{for(let d=0;d<DIM;d++)m[d]+=VEC[i*DIM+d]/n});
+ const cen=ids.map(i=>{const v=new Float32Array(DIM);for(let d=0;d<DIM;d++)v[d]=VEC[i*DIM+d]-m[d];return v});
+ const G=cen.map(a=>cen.map(b=>{let s=0;for(let d=0;d<DIM;d++)s+=a[d]*b[d];return s}));const ev=eig(G).map(x=>Math.max(0,x));const tot=ev.reduce((a,b)=>a+b,0)||1;A.pcVar=ev.map(x=>x/tot);A.effDim=tot*tot/(ev.reduce((a,b)=>a+b*b,0)||1);
+ const pos=ids.map(pv),c3=centroid(ids);A.c3=c3;A.edges=[];for(let x=0;x<n;x++)for(let y=x+1;y<n;y++)A.edges.push([x,y,pos[x].distanceTo(pos[y])]);A.radius=Math.max(...pos.map(p=>p.distanceTo(c3)));
+ const C3=[[0,0,0],[0,0,0],[0,0,0]];pos.forEach(p=>{const d=[p.x-c3.x,p.y-c3.y,p.z-c3.z];for(let i=0;i<3;i++)for(let j=0;j<3;j++)C3[i][j]+=d[i]*d[j]});const e3=eig(C3);A.shape3=e3.map(x=>Math.sqrt(Math.max(0,x)/n));
+ const r=A.shape3;A.shapeWord=n===2?"a line segment":r[1]<.25*r[0]?"elongated (close to a line)":r[2]<.25*r[0]?"flat (close to a plane)":"volumetric";
+ const inR=[];for(let i=0;i<N;i++)if(pv(i).distanceTo(c3)<=A.radius*1.05)inR.push(i);A.inRegion=inR;A.regionOwn=inR.filter(i=>P[i].kind==="ours").length;
+ // shared terms
+ const docsT=ids.map(i=>new Set(tok(P[i].title+" "+P[i].abstract+" "+(P[i].facet?P[i].facet.core:""))));const tc=new Map();docsT.forEach(s=>s.forEach(w=>tc.set(w,(tc.get(w)||0)+1)));
+ A.terms=[...tc].filter(([w,k])=>k>=Math.max(2,Math.ceil(n/2))&&!GW.has(w)).map(([w,k])=>[w,k,k*Math.log(1+N/(DF.get(w)||1))]).sort((a,b)=>b[2]-a[2]).slice(0,16);
+ // structure facets
+ const withF=ids.filter(i=>P[i].facet);A.nF=withF.length;const tally=f=>{const m=new Map();withF.forEach(i=>new Set(f(P[i].facet)).forEach(v=>m.set(v,(m.get(v)||0)+1)));return[...m].sort((a,b)=>b[1]-a[1]).slice(0,8)};
+ A.ops=tally(f=>f.ops||[]);A.dims=tally(f=>f.dims||[]);A.scales=tally(f=>f.scales||[]);A.forms=tally(f=>f.forms||[]);A.ev=tally(f=>f.ev?[f.ev]:[]);
+ // shared citers and clusters
+ const cc=new Map();ids.forEach(i=>new Set(P[i].docs).forEach(d=>cc.set(d,(cc.get(d)||0)+1)));A.citers=[...cc].sort((a,b)=>b[1]-a[1]);
+ const cl=new Map();ids.forEach(i=>cl.set(P[i].cluster,(cl.get(P[i].cluster)||0)+1));A.clusters=[...cl].sort((a,b)=>b[1]-a[1]);
+ A.years=ids.map(i=>P[i].year).filter(Boolean).sort();
+ // connecting items: high similarity to every member and to the centroid
+ const sc=[];for(let j=0;j<N;j++){if(ids.includes(j)||P[j].kind==="ours")continue;let mnc=1,s=0;ids.forEach(i=>{const v=cos(i,j);mnc=Math.min(mnc,v);s+=v});sc.push([j,mnc-.3*R[j],s/n])}
+ sc.sort((a,b)=>b[1]-a[1]);A.between=sc.slice(0,12);
+ // your marked items nearest the centroid
+ A.ownNear=OURS.map(o=>[o,cosV(c,o)]).sort((a,b)=>b[1]-a[1]).slice(0,4);
+ // nearest thin spot
+ let bg=null,bd=1e9;GP.forEach((g,k)=>{const d=g.distanceTo(c3);if(d<bd){bd=d;bg=k}});A.gap=bg==null?null:{k:bg,d:bd,g:D.gaps[bg]};
+ A.quotes=ids.flatMap(i=>P[i].quotes.slice(0,2).map(q=>({i,t:q.t,l:q.l})));
+ return A}
+function fmtList(l){return l.map(([k,c])=>k+" ("+c+")").join(", ")||"none recorded"}
+function anaMd(A){const ids=A.ids,n=ids.length,T=i=>P[i].title.replace(/\s+/g," ");let o=[];
+ o.push("# Analysis request: what ties these items together?");
+ o.push("");o.push("I selected "+n+" items on a 3D map built from text embeddings of "+N+" items (our 10 documents, the sources they cite, and related works they do not cite). Please analyse what ties them together from first principles: describe the operations, quantities and their dimensions, scales, constraints, and the kind of evidence in each, and say what shared structure they imply. Avoid field or discipline names as organising labels. Say where the evidence is thin, and suggest what literature would test or extend the connection.");
+ o.push("");o.push("## Selected items");ids.forEach((i,k)=>{const p=P[i];o.push((k+1)+". "+T(i)+" ("+(p.year||"n.d.")+") ["+p.id+(p.doi?", doi:"+p.doi:"")+"]"+(p.kind==="ours"?" [your marked item]":p.docs.length?" [cited by: "+p.docs.join(", ")+"]":" [other items]")+(p.cites?" ["+p.cites+" citations]":""));
+  if(p.facet)o.push("   structure: "+p.facet.core+" | operations: "+p.facet.ops.join(", ")+" | evidence: "+(p.facet.ev||"n/a")+(p.facet.dims.length?" | quantity dimensions: "+p.facet.dims.join(", "):"")+(p.facet.scales.length?" | scales: "+p.facet.scales.join("; "):""));
+  if(p.abstract)o.push("   abstract: "+p.abstract.replace(/\s+/g," ").slice(0,600))});
+ o.push("");o.push("## Shape of the selection in the embedding space");
+ o.push("- mean pairwise cosine similarity "+A.meanCos.toFixed(2)+"; tightest pair: "+T(ids[A.tight[1]]).slice(0,60)+" and "+T(ids[A.tight[2]]).slice(0,60)+" ("+A.tight[0].toFixed(2)+"); loosest pair: "+T(ids[A.loose[1]]).slice(0,60)+" and "+T(ids[A.loose[2]]).slice(0,60)+" ("+A.loose[0].toFixed(2)+")");
+ o.push("- variance along principal directions in the 768-dimensional space: "+A.pcVar.slice(0,4).map(x=>(x*100).toFixed(0)+"%").join(", ")+"; effective dimensionality "+A.effDim.toFixed(1)+" of a possible "+(n-1));
+ o.push("- in the 3D map the selection is "+A.shapeWord+" (axis spreads "+A.shape3.map(x=>x.toFixed(1)).join(", ")+" map units); the sphere around it holds "+A.inRegion.length+" items, "+A.regionOwn+" of them your marked items");
+ o.push("- clusters spanned: "+A.clusters.map(([c,k])=>CL[c].name+" ("+k+")").join("; ")+"; years "+(A.years.length?A.years[0]+" to "+A.years[A.years.length-1]:"n/a"));
+ o.push("");o.push("## Shared structure (from the "+A.nF+" selected items that carry structure tags)");
+ o.push("- operations: "+fmtList(A.ops));o.push("- quantity dimensions: "+fmtList(A.dims));o.push("- scales: "+fmtList(A.scales));o.push("- evidence kinds: "+fmtList(A.ev));
+ o.push("- distinctive words shared by at least half of the items: "+(A.terms.map(t=>t[0]+" ("+t[1]+")").join(", ")||"none"));
+ o.push("- cited by your marked items: "+(A.citers.map(([d,k])=>d+" ("+k+")").join(", ")||"none"));
+ o.push("");o.push("## Items that lie between them (similar to every selected item)");A.between.forEach(([j,m,a])=>o.push("- "+T(j)+" ("+(P[j].year||"n.d.")+") ["+P[j].id+"] min similarity "+(m).toFixed(2)+(P[j].facet?"; operations: "+P[j].facet.ops.join(", "):"")));
+ o.push("");o.push("## Your marked items nearest the centre of the selection");A.ownNear.forEach(([o2,s])=>o.push("- "+P[o2].title.slice(0,90)+" (cosine "+s.toFixed(2)+")"));
+ if(A.gap)o.push("\n## Nearest thin spot in the map\n- thin spot #"+(A.gap.k+1)+", "+A.gap.d.toFixed(0)+" map units from the centre of the selection (ratio "+A.gap.g.ratio+(A.gap.g.split?", time split":"")+"), between "+T(A.gap.g.a).slice(0,70)+" and "+T(A.gap.g.b).slice(0,70));
+ if(A.quotes.length){o.push("");o.push("## Verified quotes available (with locators)");A.quotes.slice(0,10).forEach(q=>o.push("- "+T(q.i).slice(0,50)+": \""+q.t.replace(/\s+/g," ").slice(0,300)+"\" ["+q.l+"]"))}
+ o.push("");o.push("## Notes on the data");o.push("- Similarities come from text embeddings of titles and abstracts. Positions in the 3D map are approximate. Structure tags exist for a subset of cited items only. Treat shared words as leads, not findings.");
+ o.push("- Item ids above are the ids used in the map data (doi: for items with a DOI, t: for items identified by title).");
+ return o.join("\n")}
+function openAnalysis(){if(S.pins.length<2)return;const A=analyze(S.pins);S.ana=A;const md=anaMd(A);S.anaMd=md;const ids=A.ids,n=ids.length;const e=$("ana");e.style.display="block";
+ const tbl=(rows,hd)=>"<table><tr>"+hd.map(h=>"<th>"+h+"</th>").join("")+"</tr>"+rows.map(r=>"<tr>"+r.map(c=>"<td>"+c+"</td>").join("")+"</tr>").join("")+"</table>";
+ const heat=v=>{const a=Math.max(0,Math.min(1,(v-.3)/.6));return`background:rgba(125,162,255,${(.12+a*.5).toFixed(2)})`};
+ let h=`<div class="hd"><b style="font-size:16px;flex:1">Deep analysis of ${n} selected items</b><button id="acp">Copy for Claude</button><button id="adl">Save as file</button><button id="aai">Interpret with Claude</button><button id="acl">Close</button><span id="anote" class="meta"></span></div>`;
+ h+=`<div class="grid"><div><h3>Shape</h3><div>Mean pairwise similarity <b>${A.meanCos.toFixed(2)}</b>. Effective dimensionality <b>${A.effDim.toFixed(1)}</b> of ${n-1} possible, with variance along the principal directions ${A.pcVar.slice(0,4).map(x=>(x*100).toFixed(0)+"%").join(", ")}. In the map the selection is <b>${A.shapeWord}</b>, and the sphere around it holds <b>${A.inRegion.length}</b> items (${A.regionOwn} ours).</div><div class="meta" style="margin-top:6px">Tightest pair ${esc(P[ids[A.tight[1]]].title.slice(0,50))} and ${esc(P[ids[A.tight[2]]].title.slice(0,50))} (${A.tight[0].toFixed(2)}). Loosest pair ${esc(P[ids[A.loose[1]]].title.slice(0,50))} and ${esc(P[ids[A.loose[2]]].title.slice(0,50))} (${A.loose[0].toFixed(2)}).</div></div>
+ <div><h3>Reach</h3><div>Clusters: ${A.clusters.map(([c,k])=>esc(CL[c].name)+" ("+k+")").join("; ")}.</div><div>Years: ${A.years.length?A.years[0]+" to "+A.years[A.years.length-1]:"n/a"}. Cited by your marked items: ${esc(A.citers.map(([d,k])=>d+" ("+k+")").join(", ")||"none")}.</div><div class="meta">Your marked items nearest the centre: ${A.ownNear.map(([o,s])=>esc(P[o].title.slice(0,40))+" ("+s.toFixed(2)+")").join("; ")}</div></div></div>`;
+ h+=`<h3>Pairwise similarity</h3>`+tbl(ids.map((a,x)=>[`<b>${x+1}</b> ${esc(P[a].title.slice(0,50))}`,...A.cosm[x].map((v,y)=>`<span style="padding:1px 4px;${heat(v)}">${x===y?"–":v.toFixed(2)}</span>`)]),["item",...ids.map((_,k)=>k+1)]);
+ h+=`<h3>The items</h3>`+tbl(ids.map((i,k)=>{const p=P[i];return[k+1,`<a class="pl" data-j="${i}">${esc(p.title.slice(0,90))}</a><div class="meta">${esc(p.authors)} ${p.year||""} · ${esc(CL[p.cluster].name)}</div>`,p.facet?esc(p.facet.core):'<span class="meta">no structure tag</span>',p.facet?esc(p.facet.ops.join(", "))+"<div class='meta'>"+esc(p.facet.ev||"")+"</div>":"",p.cites||"",esc(p.docs.join(", "))]}),["#","item","structure","operations and evidence","citations","cited by"]);
+ h+=`<div class="grid"><div><h3>Shared structure</h3><div class="meta">Counted over the ${A.nF} selected items that have structure tags.</div><div><b>Operations:</b> ${esc(fmtList(A.ops))}</div><div><b>Quantity dimensions:</b> ${esc(fmtList(A.dims))}</div><div><b>Scales:</b> ${esc(fmtList(A.scales))}</div><div><b>Evidence:</b> ${esc(fmtList(A.ev))}</div></div>
+ <div><h3>Shared terms</h3><div class="meta">Words found in at least half of the items, weighted by how rare they are in the whole map.</div><div>${A.terms.map(t=>`<span class="tag">${esc(t[0])} ${t[1]}/${n}</span>`).join("")||"none"}</div></div></div>`;
+ h+=`<h3>Items that lie between them</h3>`+tbl(A.between.map(([j,m,a])=>[`<a class="pl" data-j="${j}">${esc(P[j].title.slice(0,90))}</a>`,P[j].year||"",esc(CL[P[j].cluster].name),m.toFixed(2),P[j].facet?esc(P[j].facet.ops.join(", ")):""]),["item","year","cluster","min similarity to members","operations"]);
+ if(A.gap)h+=`<h3>Nearest thin spot</h3><div>#${A.gap.k+1}, ${A.gap.d.toFixed(0)} map units from the centre (ratio ${A.gap.g.ratio}${A.gap.g.split?", time split":""}), between ${esc(P[A.gap.g.a].title.slice(0,70))} and ${esc(P[A.gap.g.b].title.slice(0,70))}.</div>`;
+ if(A.quotes.length)h+=`<h3>Verified quotes available</h3>`+A.quotes.slice(0,8).map(q=>`<div class="q">“${esc(q.t.slice(0,320))}”<div class="meta">${esc(P[q.i].title.slice(0,60))} · ${esc(q.l)}</div></div>`).join("");
+ h+=`<h3>Prompt for Claude</h3><div class="meta">This text carries everything above plus abstracts, ids and a request to find the first-principles themes. Copy it into any Claude session.</div><textarea id="amd" readonly></textarea>`;
+ e.innerHTML=h;$("amd").value=md;
+ const note=t=>{$("anote").textContent=t};
+ $("acl").onclick=()=>{e.style.display="none";hideBack()};
+ $("acp").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(md);ok=true}catch(x){}if(!ok){try{$("amd").select();ok=document.execCommand("copy")}catch(x){}}note(ok?"Copied to clipboard.":"Clipboard is blocked here. Select the text in the box below and copy it, or use Save as file.")};
+ $("adl").onclick=async()=>{const dl=await (typeof claude!=="undefined"?claude.use("downloads"):Promise.resolve(null)).catch(()=>null);if(dl){try{await dl.save({filename:"selection_analysis.md",data:md});note("Saved.")}catch(x){note("Save was cancelled.")}}else note("Saving is unavailable in this view.")};
+ $("aai").onclick=()=>{e.style.display="none";hideBack();if($("bChat").style.display==="none"){note("Chat is unavailable. Use Copy for Claude.");e.style.display="block";return}openChat();$("ci").value="Using the analysis of my selected items, what first-principles themes tie them together? Describe by operations, quantities, scales and constraints, and say where the evidence is thin.";sendChat()};
+ e.querySelectorAll("[data-j]").forEach(a=>a.onclick=()=>{parkAna("Back to the analysis of "+n+" items",()=>{pinsUI();refresh()});select(+a.dataset.j);flyTo(pv(+a.dataset.j),28,700)});e.scrollTop=0;hideBack()}
+// gap probe: is this void real, a layout effect, or a sampling effect?
+function medianNbrCos(){if(medianNbrCos.v)return medianNbrCos.v;const a=[];for(let i=0;i<N;i+=5){if(P[i].kind==="ours")continue;const j=NB[i].filter(x=>P[x].kind!=="ours")[9];if(j!=null)a.push(cos(i,j))}a.sort((x,y)=>x-y);return medianNbrCos.v=a[a.length>>1]}
+function probeGap(){const c3=S.regionC.clone(),Rr=S.regionR;const inside=[],shell=[];
+ for(let i=0;i<N;i++){if(P[i].kind==="ours"||S.hide[i])continue;const d=pv(i).distanceTo(c3);if(d<=Rr)inside.push(i);else if(d<=Rr*1.9)shell.push(i)}
+ const thr=medianNbrCos();const dirs=shell.map(i=>pv(i).sub(c3).normalize());const pairs=[];
+ const M=shell.length,allPairs=M*(M-1)/2,PAIR_BUDGET=200000,keep=allPairs>PAIR_BUDGET?PAIR_BUDGET/allPairs:1;for(let x=0;x<M;x++)for(let y=x+1;y<M;y++){if(keep<1&&Math.random()>keep)continue;if(dirs[x].dot(dirs[y])<-.45)pairs.push([shell[x],shell[y],cos(shell[x],shell[y])])}
+ pairs.sort((a,b)=>b[2]-a[2]);const tear=pairs.filter(p=>p[2]>=thr).length,frac=pairs.length?tear/pairs.length:0;const sampled=keep<1,pairsN=Math.round(pairs.length/keep),tearN=Math.round(tear/keep);
+ const top=pairs.slice(0,8),low=pairs.slice(-5).reverse();
+ // what would sit in the middle: nearest items to midpoints of the most similar cross pairs
+ const mids=top.slice(0,5).map(([a,b])=>{const v=new Float32Array(DIM);let n2=0;for(let d=0;d<DIM;d++){v[d]=VEC[a*DIM+d]+VEC[b*DIM+d];n2+=v[d]*v[d]}n2=Math.sqrt(n2);for(let d=0;d<DIM;d++)v[d]/=n2;let best=-1,bs=-2;for(let j=0;j<N;j++){if(j===a||j===b||P[j].kind==="ours")continue;const s=cosV(v,j);if(s>bs){bs=s;best=j}}return{a,b,j:best,s:bs,d3:best>=0?pv(best).distanceTo(c3):0,inside:inside.includes(best)}});
+ const sideTerms=idsArr=>{const m=new Map();idsArr.forEach(i=>new Set(tok(P[i].title+" "+P[i].abstract)).forEach(w=>{if(!GW.has(w))m.set(w,(m.get(w)||0)+1)}));return[...m].map(([w,k])=>[w,k*Math.log(1+N/(DF.get(w)||1))]).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0])};
+ const sA=[...new Set(top.map(p=>p[0]))],sB=[...new Set(top.map(p=>p[1]))];const tA=sideTerms(sA),tB=sideTerms(sB);
+ const yrs=shell.map(i=>P[i].year).filter(Boolean).sort();const citedFrac=shell.length?shell.filter(i=>P[i].kind==="cited").length/shell.length:0;
+ const noAbs=shell.length?shell.filter(i=>!P[i].has_abs).length/shell.length:0;
+ const cls=new Map();shell.forEach(i=>cls.set(P[i].cluster,(cls.get(P[i].cluster)||0)+1));const cl=[...cls].sort((a,b)=>b[1]-a[1]).slice(0,4);
+ const verdict=pairs.length<6?"Too few items on opposite sides to judge. Increase the radius.":frac>=.25?"Mostly a layout effect. Many items on opposite sides of the void are about as similar as ordinary neighbours, so the 3D layout stretched them apart. Use Links to see the true neighbours that span it.":frac<.05?"Likely a real gap in this corpus. Items on opposite sides are less similar than ordinary neighbours, and no item lies near their midpoints.":"Mixed. A minority of opposite-side pairs are close in the full space, so the void is partly a layout effect and partly a real gap.";
+ const q1=tA.slice(0,4).join(" ")+" "+tB.slice(0,4).join(" "),q2=top.length?P[top[0][0]].title.slice(0,80)+" "+P[top[0][1]].title.slice(0,80):"";
+ const G={c3,Rr,inside,shell,pairs,frac,tear,thr,top,low,mids,tA,tB,yrs,citedFrac,noAbs,cl,verdict,queries:[q1.trim(),q2.trim()].filter(Boolean)};S.gapProbe=G;
+ lineSpec=top.map(([a,b])=>[a,b,[.3,.9,.95]]);drawLines();S.hits=[...sA,...sB];refresh();
+ const T=i=>P[i].title.replace(/\s+/g," ").slice(0,90);
+ const md=["# Gap analysis request: why is there a void here?","","On a 3D map of "+N+" items (your marked items, what they cite, and related works), I found an empty region (sphere radius "+Rr+" map units, "+inside.length+" items inside, "+shell.length+" in the surrounding shell). Please investigate why it is empty. Decide whether it is a real absence of literature, a sampling effect of what we cite, a time split, a vocabulary difference, or a layout effect, then search the literature (Semantic Scholar, Europe PMC, arXiv, Crossref) for work that would sit inside the gap, and describe what you find by structure (operations, quantities, scales, constraints, evidence). Do not use discipline names as organising labels.","","## Tests already run in the page","- verdict: "+verdict,"- opposite-side pairs: "+pairs.length+"; pairs at least as similar as an ordinary 10th-nearest neighbour (cosine "+thr.toFixed(2)+"): "+tear+" ("+(frac*100).toFixed(0)+"%)","- shell items: "+shell.length+", years "+(yrs.length?yrs[0]+" to "+yrs[yrs.length-1]+" (median "+yrs[yrs.length>>1]+")":"n/a")+"; "+(citedFrac*100).toFixed(0)+"% cited by your marked items; "+(noAbs*100).toFixed(0)+"% lack abstracts","- clusters around the rim: "+cl.map(([c,k])=>CL[c].name+" ("+k+")").join("; "),"- distinctive words on one side: "+tA.join(", "),"- distinctive words on the other side: "+tB.join(", "),"","## Most similar pairs across the void (candidate bridges)",...top.map(([a,b,s])=>"- "+T(a)+" ("+(P[a].year||"?")+") [ "+P[a].id+" ] <-> "+T(b)+" ("+(P[b].year||"?")+") [ "+P[b].id+" ], cosine "+s.toFixed(2)),"","## Least similar pairs across the void",...low.map(([a,b,s])=>"- "+T(a)+" <-> "+T(b)+", cosine "+s.toFixed(2)),"","## Nearest existing items to the midpoints of the closest pairs",...mids.map(m=>"- midpoint of ["+T(m.a).slice(0,40)+" | "+T(m.b).slice(0,40)+"] is nearest to "+T(m.j)+" ("+(P[m.j].year||"?")+"), cosine "+m.s.toFixed(2)+", "+m.d3.toFixed(0)+" map units from the void"+(m.inside?" (inside the void)":"")),"","## Suggested search queries",...G.queries.map(q=>"- "+q),"","## Notes","- Similarities come from text embeddings of titles and abstracts. Positions are approximate. The corpus holds what your marked items cite plus related works found by bridging searches, so a void can reflect that sampling."].join("\n");
+ G.md=md;S.anaMd=md;
+ const e=$("ana");e.style.display="block";
+ const li=l=>l.map(([a,b,s])=>`<tr><td><a class="pl" data-j="${a}">${esc(T(a))}</a> <span class="meta">${P[a].year||""}</span></td><td><a class="pl" data-j="${b}">${esc(T(b))}</a> <span class="meta">${P[b].year||""}</span></td><td>${s.toFixed(2)}</td></tr>`).join("");
+ e.innerHTML=`<div class="hd"><b style="font-size:16px;flex:1">Gap probe</b><button id="gcp">Copy for Claude</button><button id="gq">Queue a literature search</button><button id="gai">Interpret with Claude</button><button id="gcl">Close</button><span id="gnote" class="meta"></span></div>
+ <div style="font-size:15px;margin:8px 0"><b>${esc(verdict)}</b></div>
+ <div class="grid"><div><h3>What the tests say</h3><ul style="margin:0 0 0 16px;padding:0"><li>Items inside the sphere: <b>${inside.length}</b>; in the surrounding shell: ${shell.length}.</li><li>Pairs on opposite sides of the void: ${pairsN}${sampled?" (estimated from a sample)":""}. About as similar as ordinary neighbours (cosine ≥ ${thr.toFixed(2)}): <b>${tearN}</b> (${(frac*100).toFixed(0)}%). A high share means the layout tore neighbours apart.</li><li>Rim years: ${yrs.length?yrs[0]+" to "+yrs[yrs.length-1]+", median "+yrs[yrs.length>>1]:"n/a"}. ${(citedFrac*100).toFixed(0)}% of rim items are in your collection, so the rest were found by bridging searches. ${(noAbs*100).toFixed(0)}% lack abstracts.</li><li>Clusters around the rim: ${esc(cl.map(([c,k])=>CL[c].name+" ("+k+")").join("; "))}.</li></ul></div>
+ <div><h3>Vocabulary on the two sides</h3><div class="meta">Distinctive words among the most similar pairs across the void.</div><div>${tA.map(w=>`<span class="tag">${esc(w)}</span>`).join("")}</div><div style="margin-top:6px">${tB.map(w=>`<span class="tag">${esc(w)}</span>`).join("")}</div><h3>Suggested searches</h3>${G.queries.map(q=>`<div><code>${esc(q)}</code></div>`).join("")}</div></div>
+ <h3>Closest pairs across the void (candidate bridges, drawn in cyan)</h3><table><tr><th>one side</th><th>other side</th><th>cosine</th></tr>${li(top)}</table>
+ <h3>Least similar pairs across the void</h3><table><tr><th>one side</th><th>other side</th><th>cosine</th></tr>${li(low)}</table>
+ <h3>Where the midpoints land</h3><table><tr><th>midpoint of</th><th>nearest existing item</th><th>cosine</th><th>map units from the void</th></tr>${mids.map(m=>`<tr><td>${esc(T(m.a).slice(0,40))} | ${esc(T(m.b).slice(0,40))}</td><td><a class="pl" data-j="${m.j}">${esc(T(m.j))}</a></td><td>${m.s.toFixed(2)}</td><td>${m.d3.toFixed(0)}${m.inside?" (inside)":""}</td></tr>`).join("")}</table>
+ <h3>Prompt for Claude</h3><div class="meta">Asks Claude to decide why the gap exists and to search for work that would sit inside it.</div><textarea id="gmd" readonly></textarea>`;
+ $("gmd").value=md;const note=x=>{$("gnote").textContent=x};
+ $("gcl").onclick=()=>{e.style.display="none";hideBack()};
+ $("gcp").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(md);ok=true}catch(x){}if(!ok){try{$("gmd").select();ok=document.execCommand("copy")}catch(x){}}note(ok?"Copied to clipboard.":"Clipboard is blocked here. Select the text in the box below and copy it.")};
+ $("gq").onclick=async()=>{if(!DB){note("Shared database unavailable. Use Copy for Claude.");return}const id="gap"+Date.now().toString(36);try{await DB.collection("jobs").doc(id).set({kind:"gap_search",status:"queued",created:Date.now(),verdict,queries:G.queries,region:{centre:c3.toArray().map(x=>+x.toFixed(1)),radius:Rr},prompt:md.slice(0,20000)});note("Queued as "+id+". Ask Claude in the terminal session to process queued jobs.")}catch(x){note("Could not queue: "+(x&&x.message||x))}};
+ $("gai").onclick=()=>{if($("bChat").style.display==="none"){note("Chat is unavailable. Use Copy for Claude.");return}e.style.display="none";hideBack();openChat();$("ci").value="Why might this void in the map be empty, and what kind of literature would sit in it? Use the gap probe results and describe by structure.";sendChat()};
+ e.querySelectorAll("[data-j]").forEach(a=>a.onclick=()=>{parkAna("Back to the gap probe",()=>{lineSpec=top.map(([a,b])=>[a,b,[.3,.9,.95]]);drawLines();S.hits=[...sA,...sB];S.regionC.copy(c3);S.regionR=Rr;S.regionOn=true;sph.visible=true;sph.position.copy(c3);sph.scale.setScalar(Rr);refresh()});select(+a.dataset.j);flyTo(pv(+a.dataset.j),28,700)});e.scrollTop=0;hideBack()}
+// bookmarks: a reading list kept in the shared database when available, and in this browser otherwise
+const BM=new Map();const PIDX=new Map(P.map((p,i)=>[p.id,i]));let BMDB=null;
+const bmKey=pid=>pid.replace(/[^A-Za-z0-9_.-]/g,"_").slice(0,150);
+function bmSaveLocal(){try{localStorage.setItem("idea_bm",JSON.stringify([...BM.values()]))}catch(e){}}
+const normBM=b=>{if(b.bm===undefined&&b.star===undefined){b.bm=true;b.star=false}b.bm=!!b.bm;b.star=!!b.star;return b};
+const isBm=pid=>{const b=BM.get(pid);return !!(b&&b.bm)},isStar=pid=>{const b=BM.get(pid);return !!(b&&b.star)};
+let BMTAB="all";
+try{JSON.parse(localStorage.getItem("idea_bm")||"[]").forEach(b=>{if(PIDX.has(b.pid))BM.set(b.pid,normBM(b))})}catch(e){}
+// Removed bookmarks are kept as tombstones (both flags false, newer t) so that a device still holding the old bookmark cannot bring it back.
+// On each sync the newer record wins for every item; a tie goes to the tombstone.
+const isTomb=b=>!(b.bm||b.star);
+function bmMerge(local,remote){const lb=new Map(local.map(r=>[r.pid,r])),rb=new Map(remote.map(r=>[r.pid,r]));const recs=new Map(),push=[];
+ for(const pid of new Set([...lb.keys(),...rb.keys()])){const a=lb.get(pid),b=rb.get(pid);let w;
+  if(!a)w=b;else if(!b)w=a;else{const ta=a.t||0,tb=b.t||0;w=ta>tb?a:tb>ta?b:(isTomb(a)?a:b)}
+  recs.set(pid,w);if(a&&w===a&&(!b||(a.t||0)!==(b.t||0)||isTomb(a)!==isTomb(b)))push.push(pid)}
+ return{recs,push}}
+(async()=>{try{const db=await claude.use("db");if(!db)return;BMDB=db;const snap=await db.collection("bookmarks").get();
+ const remote=snap.docs.map(d=>d.data()).filter(v=>v&&PIDX.has(v.pid)).map(normBM);
+ const m=bmMerge([...BM.values()],remote);BM.clear();m.recs.forEach((r,k)=>BM.set(k,r));m.push.forEach(pid=>db.collection("bookmarks").doc(bmKey(pid)).set(BM.get(pid)).catch(()=>{}));bmSaveLocal();bmUpdateBtn();if($("bm").style.display==="block")renderBM()}catch(e){}})();
+function bmUpdateBtn(){invalidate();const nb=[...BM.values()].filter(b=>b.bm).length,ns=[...BM.values()].filter(b=>b.star).length;$("bBm").textContent="Library"+(nb||ns?" ("+nb+" · ★"+ns+")":"")}
+function bmWrite(b){if(BMDB)BMDB.collection("bookmarks").doc(bmKey(b.pid)).set(b).catch(()=>{});bmSaveLocal()}
+function toggleFlag(i,flag){invalidate();const p=P[i];if(p.kind==="ours")return false;let b=BM.get(p.id);if(!b){b={pid:p.id,title:p.title.slice(0,200),year:p.year||null,doi:p.doi||null,note:"",t:Date.now(),bm:false,star:false};BM.set(p.id,b)}
+ b[flag]=!b[flag];b.t=Date.now();
+ bmWrite(b);
+ bmUpdateBtn();if($("bm").style.display==="block")renderBM();const r=BM.get(p.id);return !!(r&&r[flag])}
+const toggleBM=i=>toggleFlag(i,"bm"),toggleStar=i=>toggleFlag(i,"star");
+function removeBM(pid){invalidate();const b=BM.get(pid);if(b){b.bm=false;b.star=false;b.t=Date.now();bmWrite(b)}bmUpdateBtn();if($("bm").style.display==="block")renderBM()}
+function renderBM(){const e=$("bm");const all=[...BM.values()].filter(b=>b.bm||b.star).sort((a,b)=>b.t-a.t);const nb=all.filter(b=>b.bm).length,ns=all.filter(b=>b.star).length;
+ const list=BMTAB==="bm"?all.filter(b=>b.bm):BMTAB==="star"?all.filter(b=>b.star):all;
+ const tabs=`<div class="chips"><span class="chip ${BMTAB==="all"?"on":""}" data-tab="all">All <small>${all.length}</small></span><span class="chip ${BMTAB==="bm"?"on":""}" data-tab="bm">Bookmarks <small>${nb}</small></span><span class="chip ${BMTAB==="star"?"on":""}" data-tab="star">Stars on the map <small>${ns}</small></span></div>`;
+ const where=BMDB?"Saved in this artifact's shared database, so it persists across visits and devices.":"Saved in this browser only.";
+ e.innerHTML=tabs+(list.length?`<div class="meta" style="margin-bottom:6px">${where} A bookmark adds an item to this list. A star also marks it on the map.</div>`+list.map(b=>`<div style="border-top:1px solid var(--line);padding:7px 0"><div><a class="pl" data-f="${esc(b.pid)}">${esc(b.title.slice(0,100))}</a> <span class="meta">${b.year||""}</span> <a class="pl" data-x="${esc(b.pid)}" title="Remove from the library">×</a></div><div class="meta" style="margin-top:3px"><a class="pl" data-tb="${esc(b.pid)}">${b.bm?"Bookmarked":"Bookmark"}</a> · <a class="pl" data-ts="${esc(b.pid)}">${b.star?"★ Starred":"☆ Star"}</a></div><input type="text" data-n="${esc(b.pid)}" value="${esc(b.note)}" placeholder="note" style="width:100%;margin-top:4px;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit"></div>`).join("")+`<div class="btns"><button id="bmsel">Select these</button><button id="bmcp">Copy list</button><button id="bmdl">Save as file</button></div><div id="bmnote" class="meta"></div>`:`<div class="meta">${BMTAB==="star"?"No stars yet. Press ☆ Star on an item card (or Shift+B) to mark it on the map.":BMTAB==="bm"?"No bookmarks yet. Press Bookmark on an item card (or B).":"Nothing here yet. Open an item and press Bookmark to keep it in your list, or Star to also mark it on the map."}</div>`);
+ e.querySelectorAll("[data-tab]").forEach(c=>c.onclick=()=>{BMTAB=c.dataset.tab;renderBM()});
+ e.querySelectorAll("[data-f]").forEach(a=>a.onclick=()=>{const i=PIDX.get(a.dataset.f);if(i!=null){select(i);flyTo(pv(i),28,800)}});
+ e.querySelectorAll("[data-x]").forEach(a=>a.onclick=()=>removeBM(a.dataset.x));
+ e.querySelectorAll("[data-tb]").forEach(a=>a.onclick=()=>{const i=PIDX.get(a.dataset.tb);if(i!=null)toggleBM(i)});
+ e.querySelectorAll("[data-ts]").forEach(a=>a.onclick=()=>{const i=PIDX.get(a.dataset.ts);if(i!=null)toggleStar(i)});
+ e.querySelectorAll("[data-n]").forEach(inp=>inp.onchange=()=>{const b=BM.get(inp.dataset.n);if(b){b.note=inp.value;bmWrite(b)}});
+ const md=()=>"# "+(BMTAB==="star"?"Starred items":BMTAB==="bm"?"Reading list":"Library")+"\n\n"+list.map(b=>"- "+b.title+" ("+(b.year||"n.d.")+")"+(b.doi?" https://doi.org/"+b.doi:"")+" ["+b.pid+"]"+(b.note?"\n  note: "+b.note:"")).join("\n");
+ if(list.length){$("bmsel").onclick=()=>{list.slice(0,6).forEach(b=>{const i=PIDX.get(b.pid);if(i!=null&&!S.pins.includes(i))S.pins.push(i)});S.pins=S.pins.slice(-6);if(!S.selMode)$("bSel").click();pinsUI();refresh()};
+  $("bmcp").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(md());ok=true}catch(x){}$("bmnote").textContent=ok?"Copied.":"Clipboard is blocked here. Use Save as file."};
+  $("bmdl").onclick=async()=>{const dl=await (typeof claude!=="undefined"?claude.use("downloads"):Promise.resolve(null)).catch(()=>null);if(dl){try{await dl.save({filename:"library.md",data:md()});$("bmnote").textContent="Saved."}catch(x){}}else $("bmnote").textContent="Saving is unavailable in this view."}}}
+$("bBm").onclick=()=>{const e=$("bm");if(e.style.display==="block")e.style.display="none";else{e.style.display="block";renderBM()}};
+const bmGeo=new THREE.BufferGeometry();const bmTex=(()=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");g.strokeStyle="#ffd166";g.fillStyle="#ffd16655";g.lineWidth=4;g.beginPath();for(let k=0;k<10;k++){const r=k%2?12:28,a=-Math.PI/2+k*Math.PI/5;g.lineTo(32+r*Math.cos(a),32+r*Math.sin(a))}g.closePath();g.fill();g.stroke();return new THREE.CanvasTexture(c)})();
+const bmPts=new THREE.Points(bmGeo,new THREE.PointsMaterial({map:bmTex,size:26,sizeAttenuation:false,transparent:true,depthWrite:false,depthTest:false}));bmPts.frustumCulled=false;scene.add(bmPts);let bmN=-1;
+function bmUpdate(){if(!S.showStars){bmPts.visible=false;return}const ids=[...BM.values()].filter(b=>b.star).map(b=>PIDX.get(b.pid)).filter(i=>i!=null&&!S.hide[i]);if(!ids.length){bmPts.visible=false;return}bmPts.visible=true;if(ids.length!==bmN||!bmGeo.attributes.position||bmGeo.attributes.position.count!==ids.length){bmGeo.setAttribute("position",new THREE.BufferAttribute(new Float32Array(ids.length*3),3));bmN=ids.length}
+ const a=bmGeo.attributes.position.array;ids.forEach((i,k)=>{a[3*k]=POS[3*i];a[3*k+1]=POS[3*i+1];a[3*k+2]=POS[3*i+2]});bmGeo.attributes.position.needsUpdate=true}
+// author profiles: the curated works are points on the map, the rest are links
+const PROF=D.profiles||{};
+function openProfile(name){const e=$("prof");e.style.display="block";
+ const keys=Object.keys(PROF);
+ if(!name){e.innerHTML=`<div class="meta" style="margin-bottom:6px">Researchers whose work you follow. Only a curated set of each person's items is on the map. Every item is listed in the profile with a link.</div>`+keys.map(k=>`<div><a class="pl" data-k="${k}">${esc(PROF[k].name)}</a> <span class="meta">${PROF[k].works.filter(w=>w.s).length} on the map of ${PROF[k].n}</span></div>`).join("");
+  e.querySelectorAll("[data-k]").forEach(a=>a.onclick=()=>openProfile(PROF[a.dataset.k].name));return}
+ const k=keys.find(x=>PROF[x].name===name);if(!k){e.innerHTML="No profile for "+esc(name);return}const pr=PROF[k];
+ e.innerHTML=`<h3 style="margin:0 0 4px">${esc(pr.name)}</h3><div class="meta">${pr.n} publications found, ${pr.works.filter(w=>w.s).length} on the map. Gold-ringed items on the map are chosen by relevance and topic, first-author items always, and never by citation count. Everything else is here as a link. <a class="pl" id="pback">all authors</a></div><input type="text" id="pq" placeholder="filter this list" style="width:100%;margin:6px 0;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font:inherit"><div id="pl"></div>`;
+ $("pback").onclick=()=>openProfile(null);
+ const draw=q=>{const w=pr.works.filter(x=>!q||(x.t+" "+(x.v||"")+" "+(x.y||"")).toLowerCase().includes(q.toLowerCase()));$("pl").innerHTML=w.slice(0,400).map(x=>`<div style="padding:3px 0;border-bottom:1px solid var(--line)">${x.s?'<span title="on the map" style="color:#ffd14d">●</span> ':''}${x.d?`<a class="pl" href="https://doi.org/${esc(x.d)}" target="_blank" rel="noopener">${esc(x.t)}</a>`:x.u?`<a class="pl" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>`:esc(x.t)} <span class="meta">${x.y||""}${x.v?" · "+esc(x.v):""}${x.p==="first"?" · first author":x.p==="last"?" · senior author":""}${x.q!=="high"?" · uncertain match":""}</span>${x.s&&x.d?` <a class="pl" data-d="${esc(x.d.toLowerCase())}">show on map</a>`:""}</div>`).join("");
+  $("pl").querySelectorAll("[data-d]").forEach(a=>a.onclick=()=>{const i=P.findIndex(p=>(p.doi||"").toLowerCase()===a.dataset.d);if(i>=0){select(i);flyTo(pv(i),28,800)}})};
+ draw("");$("pq").oninput=ev=>draw(ev.target.value)}
+$("bAuth").onclick=()=>{const e=$("prof");if(e.style.display==="block")e.style.display="none";else openProfile(null)};
+// filters: kind of evidence, organism, brain tissue
+const EVG=[["Theory or derivation",["theory_or_derivation","definition_or_framework"]],["Computation or model",["simulation_or_model"]],["Experiment in vivo",["direct_measurement_in_vivo"]],["Experiment in vitro",["direct_measurement_in_vitro"]],["Review or summary",["review_or_summary"]],["Argument, proposal or report",["analogy_or_argument","prediction_or_proposal","anecdote_or_report"]],["Method or resource",["method_or_resource"]],["Unclear from the text",[null]]];
+const ORGG=[["Human","human"],["Non-human mammal","mammal"],["Non-mammal vertebrate","nonmammal_vertebrate"],["Invertebrate","invertebrate"],["Plant, microbe or cell-free","plant_microbe_cell"],["Not stated","none"]];
+const FS={ev:new Set(),org:new Set(),brain:false};
+function passFilt(p){if(p.kind==="ours")return true;
+ if(FS.ev.size){const k=p.facet?p.facet.ev:null;let ok=false;FS.ev.forEach(i=>{if(EVG[i][1].includes(k==null?null:k))ok=true});if(!ok)return false}
+ if(FS.org.size){const tags=p.org&&p.org.length?p.org:["none"];let ok=false;FS.org.forEach(i=>{if(tags.includes(ORGG[i][1]))ok=true});if(!ok)return false}
+ if(FS.brain&&!p.brain)return false;return true}
+function countF(fn){let n=0;P.forEach(p=>{if(p.kind!=="ours"&&(!p.year||(p.year>=S.y0&&p.year<=S.y1))&&fn(p))n++});return n}
+function renderFilt(){const e=$("filt");document.body.appendChild($("time"));const shown=P.filter((p,i)=>p.kind!=="ours"&&!S.hide[i]).length;
+ e.innerHTML=`<div class="meta" style="margin-bottom:8px"><b id="fshown">${shown}</b> items shown (your marked items are never filtered). Within a group the choices combine with "or", and the groups combine with "and".</div>
+ <div id="tslot"></div>
+ <div class="meta">Kind of evidence</div><div class="chips">${EVG.map(([l,ks],i)=>`<span class="chip ${FS.ev.has(i)?"on":""}" data-g="ev" data-i="${i}">${l} <small>${countF(p=>ks.includes(p.facet?p.facet.ev:null))}</small></span>`).join("")}</div>
+ <div class="meta">Organism studied</div><div class="chips">${ORGG.map(([l,k],i)=>`<span class="chip ${FS.org.has(i)?"on":""}" data-g="org" data-i="${i}">${l} <small>${countF(p=>(p.org&&p.org.length?p.org:["none"]).includes(k))}</small></span>`).join("")}</div>
+ <div class="meta">Tissue</div><div class="chips"><span class="chip ${FS.brain?"on":""}" data-g="brain">Brain or neural tissue <small>${countF(p=>p.brain)}</small></span></div>
+ <div class="btns"><button id="fclr">Clear filters</button></div>
+ <div class="meta" style="margin-top:8px">Evidence kinds come from the structure tags and the evidence tagging pass (each tag is backed by a phrase from the title or abstract; many title-only items stay "unclear"). Organism comes from the studied system in the tags when present, otherwise from keywords in the title and abstract, so it is approximate (an item that mentions humans in passing can be tagged human). In vitro and in vivo follow the evidence kind.</div>`;
+ $("tslot").appendChild($("time"));drawHist();
+ e.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const g=c.dataset.g;if(g==="brain")FS.brain=!FS.brain;else{const s=FS[g],i=+c.dataset.i;s.has(i)?s.delete(i):s.add(i)}refresh();renderFilt()});
+ $("fclr").onclick=()=>{FS.ev.clear();FS.org.clear();FS.brain=false;$("y0").value=1600;$("y1").value=2026;S.y0=1600;S.y1=2026;refresh();renderFilt()}}
+$("bFilt").onclick=()=>{const e=$("filt");if(e.style.display==="block"){e.style.display="none";$("bFilt").classList.remove("on");document.body.classList.remove("fopen")}else{e.style.display="block";$("bFilt").classList.add("on");document.body.classList.add("fopen");renderFilt()}};
+// saved views: camera, filters, layers, selections and sphere, named and kept like the library
+const VIEWS=new Map();let VWDB=null,VSORT="new",VQ="";
+const vwLocal=()=>{try{localStorage.setItem("idea_views",JSON.stringify([...VIEWS.values()]))}catch(e){}};
+try{JSON.parse(localStorage.getItem("idea_views")||"[]").forEach(v=>{if(v&&v.id)VIEWS.set(v.id,v)})}catch(e){}
+(async()=>{try{const db=await claude.use("db");if(!db)return;VWDB=db;const snap=await db.collection("views").get();const remote=new Set();snap.docs.forEach(d=>{const v=d.data();if(v&&v.id){remote.add(v.id);if(!VIEWS.has(v.id)||(v.t||0)>=(VIEWS.get(v.id).t||0))VIEWS.set(v.id,v)}});
+ for(const v of VIEWS.values())if(!remote.has(v.id))db.collection("views").doc(v.id).set(v).catch(()=>{});vwLocal();if($("views").style.display==="block")renderViews()}catch(e){}})();
+const vwWrite=v=>{if(VWDB)VWDB.collection("views").doc(v.id).set(v).catch(()=>{});vwLocal()};
+function viewState(){const lab=(arr,set)=>[...set].map(i=>arr[i][0]);
+ return{cam:{yaw,pitch,dist,t:[+tgt.x.toFixed(2),+tgt.y.toFixed(2),+tgt.z.toFixed(2)]},lens:S.lens,show:{our:S.showOur,bg:S.showBg,au:S.showAu,lk:S.showLk,jq:S.showJq,st:S.showStars,lb:$("showLb").checked},y:[S.y0,S.y1],
+  fs:{ev:lab(EVG,FS.ev),org:lab(ORGG,FS.org),brain:FS.brain},pins:S.pins.map(i=>P[i].id),sel:S.sel>=0?P[S.sel].id:null,selMode:!!S.selMode,
+  region:S.regionOn?{c:S.regionC.toArray().map(x=>+x.toFixed(2)),r:S.regionR}:null,links:S.links?{k:+$("lk").value,mut:$("lmut").checked}:null,legend:$("legend").classList.contains("open"),q:$("q").value}}
+function applyView(v){const st=v.state,pidx=pid=>PIDX.get(pid);
+ yaw=st.cam.yaw;pitch=st.cam.pitch;flyTo(new THREE.Vector3(...st.cam.t),st.cam.dist,1000);
+ if([...$("lens").options].some(o=>o.value===st.lens)){S.lens=st.lens;$("lens").value=st.lens}
+ S.showOur=st.show.our;S.showBg=st.show.bg;S.showAu=st.show.au;S.showLk=st.show.lk;S.showJq=st.show.jq!==false;$("showJq").checked=S.showJq;S.showStars=st.show.st!==false;$("showStars").checked=S.showStars;$("showOur").checked=S.showOur;$("showBg").checked=S.showBg;$("showAu").checked=S.showAu;$("showLk").checked=S.showLk;$("showLb").checked=st.show.lb!==false;
+ S.y0=st.y[0];S.y1=st.y[1];$("y0").value=S.y0;$("y1").value=S.y1;drawHist();
+ FS.ev=new Set(st.fs.ev.map(l=>EVG.findIndex(x=>x[0]===l)).filter(i=>i>=0));FS.org=new Set(st.fs.org.map(l=>ORGG.findIndex(x=>x[0]===l)).filter(i=>i>=0));FS.brain=!!st.fs.brain;
+ S.pins=st.pins.map(pidx).filter(i=>i!=null);S.selMode=st.selMode;$("bSel").classList.toggle("on",S.selMode);pinsUI();
+ if(st.region){S.regionC.set(...st.region.c);S.regionR=st.region.r;S.regionOn=true;regionUpdate()}else if(S.regionOn){S.regionOn=false;sph.visible=false;$("region").style.display="none";S.hits=null}
+ if(!!st.links!==!!S.links)$("bLinks").click();if(st.links){$("lk").value=st.links.k;$("lkv").textContent=st.links.k;$("lmut").checked=st.links.mut;buildLinks()}
+ if(st.legend!==$("legend").classList.contains("open"))$("bLegend").click();
+ const si=st.sel?pidx(st.sel):null;if(si!=null)select(si);else select(-1);
+ if($("filt").style.display==="block")renderFilt();refresh()}
+function viewSummary(st){const parts=[];if(st.sel){const i=PIDX.get(st.sel);if(i!=null)parts.push("open: "+P[i].title.slice(0,46)+(P[i].title.length>46?"…":""))}
+ if(st.pins.length)parts.push(st.pins.length+" selected");const nf=st.fs.ev.length+st.fs.org.length+(st.fs.brain?1:0);if(nf)parts.push(nf+" filter"+(nf>1?"s":""));
+ if(st.y[0]>1600||st.y[1]<2026)parts.push(st.y[0]+" to "+st.y[1]);if(st.lens!=="cluster")parts.push("colour: "+st.lens);if(st.region)parts.push("sphere");if(st.links)parts.push("links");
+ const hid=["our","bg","au","lk"].filter(k=>!st.show[k]).length;if(hid)parts.push(hid+" layer"+(hid>1?"s":"")+" hidden");return parts.join(" · ")||"overview"}
+function vwThumb(){try{renderer.render(scene,cam);const w=256,h=Math.max(1,Math.round(256*cv.height/cv.width));const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");g.fillStyle="#07080d";g.fillRect(0,0,w,h);g.drawImage(cv,0,0,w,h);return c.toDataURL("image/jpeg",.72)}catch(e){return null}}
+function renderViews(){const e=$("views");let list=[...VIEWS.values()];if(VQ)list=list.filter(v=>(v.name+" "+viewSummary(v.state)).toLowerCase().includes(VQ.toLowerCase()));
+ list.sort(VSORT==="name"?(a,b)=>a.name.localeCompare(b.name):(a,b)=>b.t-a.t);let last=null;try{last=localStorage.getItem("idea_last_view")}catch(x){}
+ e.innerHTML=`<div class="vsave"><input id="vname" placeholder="Name this view" autocomplete="off"><button id="vsv" style="border-color:var(--acc);color:var(--acc)">Save current view</button></div>
+ <div class="meta">Saves the camera angle, filters, years, colour, layers, selected items, open item and sphere. ${VWDB?"Kept in the shared database, so it persists across visits and devices.":"Kept in this browser only."} The Lens and Pull layouts are not included.</div>
+ ${last?'<div class="vb" style="margin:8px 0 0"><button id="vlast" class="vb">Resume where I left off</button></div>':""}
+ <div style="display:flex;gap:8px;align-items:center;margin-top:10px"><input class="vq" id="vq" placeholder="Search saved views" value="${esc(VQ)}"><div class="chips" style="margin:0"><span class="chip ${VSORT==="new"?"on":""}" data-sort="new">Newest</span><span class="chip ${VSORT==="name"?"on":""}" data-sort="name">A to Z</span></div></div>
+ <div id="vnote" class="meta" style="margin:6px 0 0"></div>
+ `+(list.length?list.map(v=>`<div class="vrow"><div class="vth" style="${v.thumb?"background-image:url("+v.thumb+")":""}" data-o="${v.id}" title="Open"></div><div style="flex:1;min-width:0"><input class="vn" data-r="${v.id}" value="${esc(v.name)}" aria-label="View name"><div class="meta">${new Date(v.t).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})} · ${esc(viewSummary(v.state))}</div><div class="vb"><button data-o="${v.id}">Open</button><button data-u="${v.id}" title="Replace this view with what you see now">Update</button><button data-d="${v.id}">Delete</button></div></div></div>`).join(""):`<div class="meta" style="margin-top:12px">${VIEWS.size?"No saved view matches.":"No saved views yet. Arrange the map the way you want, give it a name above and press Save current view."}</div>`);
+ const note=t=>{const n=$("vnote");if(n)n.textContent=t};
+ $("vsv").onclick=()=>{const name=$("vname").value.trim()||("View of "+new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}));const v={id:"v"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36),name,t:Date.now(),state:viewState(),thumb:vwThumb()};VIEWS.set(v.id,v);vwWrite(v);renderViews();const n=$("vnote");if(n)n.textContent="Saved “"+name+"”."};
+ $("vname").onkeydown=ev=>{if(ev.key==="Enter")$("vsv").click();ev.stopPropagation()};$("vq").oninput=ev=>{VQ=ev.target.value;const pos=ev.target.selectionStart;renderViews();const q=$("vq");q.focus();q.setSelectionRange(pos,pos)};$("vq").onkeydown=ev=>ev.stopPropagation();
+ e.querySelectorAll("[data-sort]").forEach(c=>c.onclick=()=>{VSORT=c.dataset.sort;renderViews()});
+ e.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{const v=VIEWS.get(b.dataset.o);if(v){applyView(v);note("Opened “"+v.name+"”.")}});
+ e.querySelectorAll("[data-r]").forEach(inp=>{inp.onchange=()=>{const v=VIEWS.get(inp.dataset.r);if(v&&inp.value.trim()){v.name=inp.value.trim();vwWrite(v)}};inp.onkeydown=ev=>{ev.stopPropagation();if(ev.key==="Enter")inp.blur()}});
+ e.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const v=VIEWS.get(b.dataset.u);if(v){v.state=viewState();v.thumb=vwThumb();v.t=Date.now();vwWrite(v);renderViews();const n=$("vnote");if(n)n.textContent="Updated “"+v.name+"”."}});
+ e.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="Delete for good?";setTimeout(()=>{if(b.isConnected){b.dataset.arm="";b.textContent="Delete"}},3500);return}
+  VIEWS.delete(b.dataset.d);if(VWDB)VWDB.collection("views").doc(b.dataset.d).delete().catch(()=>{});vwLocal();renderViews()});
+ const lb=$("vlast");if(lb)lb.onclick=()=>{try{const st=JSON.parse(localStorage.getItem("idea_last_view"));applyView({state:st});note("Reopened your last session.")}catch(x){note("Nothing to resume.")}}}
+$("bViews").onclick=()=>{const e=$("views");if(e.style.display==="block"){e.style.display="none";$("bViews").classList.remove("on")}else{e.style.display="block";$("bViews").classList.add("on");renderViews()}};
+addEventListener("pagehide",()=>{try{localStorage.setItem("idea_last_view",JSON.stringify(viewState()))}catch(e){}});
+// lens: re-weight the space
+const LENS={on:false,aff:null,spec:null};
+const DIMNAME={"M L^2 T^-1":"action","M L^2 T^-2":"energy","T^-1":"frequency or rate","T":"time","L":"length","M":"mass","K":"temperature","M L^2 T^-3":"power","L T^-1":"speed","M L^2 T^-2 K^-1":"entropy","I":"current","N L^-3":"number density"};
+const ALLOPS=[...new Set(P.flatMap(p=>p.facet?p.facet.ops:[]))].sort();
+const cnt=f=>{const m=new Map();P.forEach(p=>{if(p.facet)new Set(f(p.facet)).forEach(v=>m.set(v,(m.get(v)||0)+1))});return[...m].sort((a,b)=>b[1]-a[1])};
+const ALLDIMS=cnt(f=>f.dims).slice(0,14).map(x=>x[0]),ALLFORMS=cnt(f=>f.forms).slice(0,24).map(x=>x[0]),ALLEV=cnt(f=>f.ev?[f.ev]:[]).map(x=>x[0]);
+const LS={anch:[],ops:new Set(),dims:new Set(),forms:new Set(),ev:new Set(),formText:"",alpha:3,beta:1};
+const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9=]+/g,"");
+function lensTags(){const T=[];LS.ops.forEach(o=>T.push(p=>p.facet&&p.facet.ops.includes(o)));LS.dims.forEach(d=>T.push(p=>p.facet&&p.facet.dims.includes(d)));LS.ev.forEach(e=>T.push(p=>p.facet&&p.facet.ev===e));
+ const ft=[...LS.forms,...LS.formText.split(",").map(s=>s.trim()).filter(Boolean)].map(norm).filter(Boolean);ft.forEach(f=>T.push(p=>p.facet&&p.facet.forms.some(x=>norm(x).includes(f))));return T}
+function openLens(){const e=$("lensm");e.style.display="block";renderLens()}
+function chips(list,set,label){return list.map(v=>`<span class="chip ${set.has(v)?"on":""}" data-set="${label}" data-v="${esc(v)}">${esc(label==="dims"&&DIMNAME[v]?DIMNAME[v]+" ("+v+")":v)}</span>`).join("")}
+function renderLens(){const e=$("lensm");
+ e.innerHTML=`<div class="ph" style="position:sticky"><span class="pt">Lens: view the space through an idea</span><button id="lx" title="Close">×</button></div>
+ <div class="meta">A lens re-weights similarity, then recomputes neighbours and re-settles the layout. Colours keep the original clusters, so you can see what the lens moves. Thin spots are computed without the lens.</div>
+ <h4>1. Anchor items (treated as the axis of the lens)</h4><div id="lan">${LS.anch.length?LS.anch.map(i=>`<span class="chip on" data-ra="${i}">${esc(P[i].title.slice(0,60))} ×</span>`).join(""):'<span class="meta">none yet</span>'}</div>
+ <div class="btns"><button id="lps">Use selected items</button><button id="lpc">Use the open item</button></div>
+ <input type="text" id="lsq" placeholder="Search an item to anchor, for example Lohmiller Slotine" style="margin-top:6px"><div id="lsr"></div>
+ <label class="sm" style="margin-top:6px">anchor strength <input type="range" id="la" min="0" max="8" step="0.5" value="${LS.alpha}"> <b id="lav">${LS.alpha}</b></label>
+ <h4>2. Structure to emphasise (items carrying these tags move closer)</h4>
+ <div class="meta">Operations</div><div class="chips">${chips(ALLOPS,LS.ops,"ops")}</div>
+ <div class="meta">Quantity dimensions</div><div class="chips">${chips(ALLDIMS,LS.dims,"dims")}</div>
+ <div class="meta">Named laws and equations (click, or type words separated by commas)</div><div class="chips">${chips(ALLFORMS,LS.forms,"forms")}</div><input type="text" id="lft" placeholder="for example E = hf, path integral, Landauer" value="${esc(LS.formText)}">
+ <div class="meta" style="margin-top:6px">Evidence kind</div><div class="chips">${chips(ALLEV,LS.ev,"ev")}</div>
+ <label class="sm">tag weight <input type="range" id="lb" min="0" max="3" step="0.25" value="${LS.beta}"> <b id="lbv">${LS.beta}</b></label>
+ <h4>3. Or describe it in words (Claude chooses anchors and tags, and shows you what it chose)</h4>
+ <div style="display:flex;gap:6px"><input type="text" id="lst" placeholder="for example: energy as the frequency of action"><button id="lsend">Translate</button></div><div id="lnote" class="meta"></div>
+ <div class="btns" style="margin-top:12px"><button id="lapply" style="border-color:var(--acc);color:var(--acc)">Apply lens</button><button id="lreset">Reset to no lens</button>${LENS.on?'<button id="lpairs">Newly close pairs</button>':""}</div>`;
+ $("lx").onclick=()=>{e.style.display="none"};
+ e.querySelectorAll(".chip[data-set]").forEach(c=>c.onclick=()=>{const s=LS[c.dataset.set];const v=c.dataset.v;s.has(v)?s.delete(v):s.add(v);c.classList.toggle("on")});
+ e.querySelectorAll("[data-ra]").forEach(c=>c.onclick=()=>{LS.anch=LS.anch.filter(x=>x!==+c.dataset.ra);renderLens()});
+ $("lps").onclick=()=>{S.pins.forEach(i=>{if(!LS.anch.includes(i))LS.anch.push(i)});renderLens()};$("lpc").onclick=()=>{if(S.sel>=0&&!LS.anch.includes(S.sel))LS.anch.push(S.sel);renderLens()};
+ $("lsq").oninput=ev=>{const h=search(ev.target.value,6,true);$("lsr").innerHTML=h.map(i=>`<div class="sr"><div class="t">${esc(P[i].title.slice(0,90))} <span class="meta">${P[i].year||""}</span></div><button data-ad="${i}">+ Anchor</button></div>`).join("");$("lsr").querySelectorAll("[data-ad]").forEach(b=>b.onclick=()=>{const i=+b.dataset.ad;if(!LS.anch.includes(i))LS.anch.push(i);renderLens()})};
+ $("la").oninput=ev=>{LS.alpha=+ev.target.value;$("lav").textContent=LS.alpha};$("lb").oninput=ev=>{LS.beta=+ev.target.value;$("lbv").textContent=LS.beta};$("lft").oninput=ev=>{LS.formText=ev.target.value};
+ $("lapply").onclick=applyLens;$("lreset").onclick=resetLens;{const b=$("lpairs");if(b)b.onclick=openSurprise}
+ $("lsend").onclick=translateLens}
+async function translateLens(){const txt=$("lst").value.trim();if(!txt)return;if(!sample){$("lnote").textContent="Chat is unavailable. Set anchors and tags by hand.";return}$("lnote").textContent="Translating…";
+ const tools=[{name:"set_lens",description:"Set the lens. Use item ids found with search_papers. Ops, dims and evidence must come from the lists given.",inputSchema:{type:"object",properties:{anchor_ids:{type:"array",items:{type:"string"}},ops:{type:"array",items:{type:"string"}},dims:{type:"array",items:{type:"string"}},form_terms:{type:"array",items:{type:"string"}},evidence:{type:"array",items:{type:"string"}},anchor_strength:{type:"number"},tag_weight:{type:"number"},reason:{type:"string"}}},execute:a=>{setLensFrom(a);return"lens fields set; the viewer will press Apply"}},TOOLS()[0]];
+ try{const r=await sample([{role:"user",content:`A viewer wants to look at a map of research items through this lens: "${txt}". Choose anchor items (use search_papers to find real ids; at most 4), operations from ${JSON.stringify(ALLOPS)}, quantity dimensions from ${JSON.stringify(ALLDIMS)} (frequency is T^-1, action is M L^2 T^-1, energy is M L^2 T^-2), named laws or equations as short search terms, and evidence kinds from ${JSON.stringify(ALLEV)} only if relevant. Then call set_lens once and reply with two sentences on what you chose and why. Do not use discipline names.`}],{tools,modelTier:"default",cache:false});$("lnote").textContent=r.text;renderLens();$("lnote").textContent=r.text}catch(x){$("lnote").textContent="Could not translate: "+(x&&x.message||x)}}
+function setLensFrom(a){LS.anch=(a.anchor_ids||[]).map(find).filter(i=>i>=0).slice(0,4);LS.ops=new Set((a.ops||[]).filter(o=>ALLOPS.includes(o)));LS.dims=new Set((a.dims||[]).filter(d=>ALLDIMS.includes(d)));LS.ev=new Set((a.evidence||[]).filter(d=>ALLEV.includes(d)));LS.forms=new Set();LS.formText=(a.form_terms||[]).join(", ");if(a.anchor_strength!=null)LS.alpha=Math.max(0,Math.min(8,a.anchor_strength));if(a.tag_weight!=null)LS.beta=Math.max(0,Math.min(3,a.tag_weight))}
+// Pure lens core: no closures over page state, so it can run inline or inside a Worker (coreLens.toString()).
+function coreLens(o){
+ const VEC0=o.VEC0,DIM0=o.DIM0,N=o.N,NB0=o.NB0,K0=o.K0,BASE=o.BASE,anch=o.anch,alpha=o.alpha,beta=o.beta,nT=o.nT,TM=o.TM;
+ const rounds=o.rounds==null?1:o.rounds,AFF=o.affTop==null?48:o.affTop,RAND=o.rand==null?24:o.rand,K=12;
+ const CAP=K0+K0*K0+K+K*K+AFF+RAND+4;const T0=performance.now();
+ // 1. anchor basis and lensed unit vectors, as in the original applyLens
+ const basis=[];
+ for(const a of anch){const v=new Float32Array(DIM0);for(let k=0;k<DIM0;k++)v[k]=VEC0[a*DIM0+k];
+  for(const b of basis){let d=0;for(let k=0;k<DIM0;k++)d+=v[k]*b[k];for(let k=0;k<DIM0;k++)v[k]-=d*b[k]}
+  let n=0;for(let k=0;k<DIM0;k++)n+=v[k]*v[k];n=Math.sqrt(n);if(n>1e-3){for(let k=0;k<DIM0;k++)v[k]/=n;basis.push(v)}}
+ const g=Math.sqrt(1+alpha)-1,DX=DIM0+nT,w=nT?Math.sqrt(beta/nT):0;
+ const V2=new Float32Array(N*DX),aff=new Float32Array(N);
+ for(let i=0;i<N;i++){const o0=i*DIM0,q=i*DX;for(let k=0;k<DIM0;k++)V2[q+k]=VEC0[o0+k];let af=0;
+  for(const b of basis){let d=0;for(let k=0;k<DIM0;k++)d+=VEC0[o0+k]*b[k];af=Math.max(af,d);const c=g*d;for(let k=0;k<DIM0;k++)V2[q+k]+=c*b[k]}
+  let m=0;for(let j=0;j<nT;j++){if(TM[i*nT+j]){V2[q+DIM0+j]=w;m++}}aff[i]=af*(basis.length?1:0)+(nT?m/nT:0);
+  let n=0;for(let k=0;k<DX;k++)n+=V2[q+k]*V2[q+k];n=Math.sqrt(n)||1;for(let k=0;k<DX;k++)V2[q+k]/=n}
+ const T1=performance.now();
+ // 2. candidate neighbours: pool per item, refined over rounds (neighbour-of-neighbour); exact lensed similarity on the pool only
+ const order=new Array(N);for(let i=0;i<N;i++)order[i]=i;order.sort((x,y)=>aff[y]-aff[x]);const affTop=order.slice(0,AFF);
+ let seed=12345;const rnd=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const stamp=new Int32Array(N);let tag=0;
+ const cand=new Int32Array(N*CAP),cs=new Float32Array(N*CAP),cn=new Int32Array(N);
+ const r2=new Float64Array(N);let cur=new Int32Array(N*K);const snaps=[];
+ for(let pass=0;pass<=rounds;pass++){
+  for(let i=0;i<N;i++){ // sweep A: gather candidates and their lensed similarity, then the hub term
+   const base=i*CAP,a=i*DX;let c=0;tag++;
+   const add=j=>{if(j!==i&&stamp[j]!==tag){stamp[j]=tag;cand[base+c]=j;c++}};
+   for(let q=0;q<K0;q++)add(NB0[i*K0+q]);
+   if(pass===0){for(let q=0;q<K0;q++){const j=NB0[i*K0+q];for(let r=0;r<K0;r++)add(NB0[j*K0+r])}}
+   else{for(let q=0;q<K;q++){const j=cur[i*K+q];add(j);for(let r=0;r<K;r++)add(cur[j*K+r])}}
+   for(let q=0;q<AFF;q++)add(affTop[q]);
+   for(let q=0;q<RAND;q++)add(Math.floor(rnd()*N));
+   cn[i]=c;
+   for(let q=0;q<c;q++){const j=cand[base+q],b=j*DX;let s=0;for(let k=0;k<DX;k++)s+=V2[a+k]*V2[b+k];cs[base+q]=s}
+   const srt=Float32Array.from(cs.subarray(base,base+c)).sort();let t=0;for(let q=c-1;q>=c-10;q--)t+=srt[q];
+   r2[i]=1-t/10}
+  for(let i=0;i<N;i++){ // sweep B: keep the 12 candidates with the best hub-corrected score
+   const base=i*CAP,c=cn[i];const bs=new Float64Array(K).fill(Infinity),bi=new Int32Array(K).fill(-1);
+   for(let q=0;q<c;q++){const j=cand[base+q];const sc=2*(1-cs[base+q])-r2[i]-r2[j];
+    if(sc<bs[K-1]){let p=K-1;while(p>0&&bs[p-1]>sc){bs[p]=bs[p-1];bi[p]=bi[p-1];p--}bs[p]=sc;bi[p]=j}}
+   for(let q=0;q<K;q++)cur[i*K+q]=bi[q]}
+  snaps.push(cur.slice())}
+ const T2=performance.now();
+ // 3. stress layout from the current positions, as in the original (70 iterations, 7 neighbours and 4 random pairs per item)
+ const X=Float32Array.from(BASE);const ds=[];for(let i=0;i<N;i+=2){const j=NB0[i*K0];ds.push(Math.hypot(BASE[3*i]-BASE[3*j],BASE[3*i+1]-BASE[3*j+1],BASE[3*i+2]-BASE[3*j+2]))}
+ ds.sort((a,b)=>a-b);const s0=ds[ds.length>>1]||3,r0=s0*3.2;
+ const E=70;for(let e=0;e<E;e++){const lr=.35*(1-e/E)+.02;
+  for(let i=0;i<N;i++){for(let q=0;q<7;q++){const j=cur[i*K+q];const dx=X[3*j]-X[3*i],dy=X[3*j+1]-X[3*i+1],dz=X[3*j+2]-X[3*i+2];const d=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-3;if(d>s0*.8){const f=lr*.5*(1-s0*.8/d);X[3*i]+=f*dx;X[3*i+1]+=f*dy;X[3*i+2]+=f*dz;X[3*j]-=f*dx;X[3*j+1]-=f*dy;X[3*j+2]-=f*dz}}
+   for(let q=0;q<4;q++){const j=Math.floor(rnd()*N);if(j===i)continue;const dx=X[3*i]-X[3*j],dy=X[3*i+1]-X[3*j+1],dz=X[3*i+2]-X[3*j+2];const d=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-3;if(d<r0){const f=lr*.5*(r0-d)/d;X[3*i]+=f*dx;X[3*i+1]+=f*dy;X[3*i+2]+=f*dz;X[3*j]-=f*dx;X[3*j+1]-=f*dy;X[3*j+2]-=f*dz}}
+   for(let k=0;k<3;k++)X[3*i+k]+=.012*(BASE[3*i+k]-X[3*i+k])}}
+ let mx=0;for(let i=0;i<3*N;i++)mx=Math.max(mx,Math.abs(X[i]));const f=100/(mx||1);for(let i=0;i<3*N;i++)X[i]*=f;
+ const T3=performance.now();
+ return{V2,DX,nb2:cur,r2,X,aff,snaps,ms:{basis_vectors:T1-T0,candidates_and_hub:T2-T1,stress:T3-T2}};
+}
+async function applyLens(){const note=x=>{const n=$("lnote");if(n)n.textContent=x};const T=lensTags();if(!LS.anch.length&&!T.length){note("Choose at least one anchor item or tag first.");return}
+ note("Re-weighting…");await new Promise(r=>setTimeout(r,30));
+ const nT=T.length,TM=new Uint8Array(N*nT);for(let i=0;i<N;i++)for(let j=0;j<nT;j++)TM[i*nT+j]=T[j](P[i])?1:0;
+ const job={VEC0,DIM0,N,NB0:NB0F,K0:NB0F.length/N,BASE:Float32Array.from(BASE),anch:LS.anch.slice(),alpha:LS.alpha,beta:LS.beta,nT,TM};
+ const {V2,DX,nb2,r2,X,aff}=await runLensJob(job,note);
+ const NBA=new Array(N);for(let i=0;i<N;i++)NBA[i]=Array.from(nb2.subarray(i*12,i*12+12));
+ // install (same as before): the lensed vectors, neighbours and hub terms replace the originals, and the layout animates to X
+ THREADS.length=0;$("pullp").style.display="none";VEC=V2;DIM=DX;R=r2;NB=NBA;medianNbrCos.v=null;
+ const from=Float32Array.from(POS),t0=performance.now();BASE.set(X);const step=()=>{const t=Math.min(1,(performance.now()-t0)/1500),e=1-Math.pow(1-t,3);for(let i=0;i<3*N;i++)POS[i]=from[i]+(X[i]-from[i])*e;geo.attributes.position.needsUpdate=true;invalidate(true);if(S.links)buildLinks();drawLines();if(t<1)requestAnimationFrame(step)};step();
+ const as=[...aff].sort((a,b)=>a-b);LENS.aff=Array.from(aff,v=>{let lo=0,hi=N;while(lo<hi){const m=(lo+hi)>>1;if(as[m]<v)lo=m+1;else hi=m}return lo/N});LENS.on=true;LENS.spec={anchors:LS.anch.map(i=>P[i].title.slice(0,80)),ops:[...LS.ops],dims:[...LS.dims],forms:[...LS.forms,...LS.formText.split(",").map(s=>s.trim()).filter(Boolean)],ev:[...LS.ev],alpha:LS.alpha,beta:LS.beta};
+ $("bLens").classList.add("on");$("bLens").textContent="Lens: on";S.lens="aff";$("lens").value="aff";S.hits=null;S.nbrs=null;lineSpec=[];S.pins=S.pins.filter(()=>true);pinsUI();refresh();$("lensm").style.display="none";$("hint").textContent="Lens applied. Colour now shows affinity to the lens. The Newly close pairs panel lists links the lens revealed. Reset it from the Lens button.";LENS.pairs=null;openSurprise();computeSurprise(V2,DX,nb2).then(()=>{if($("surp").style.display==="block")renderSurprise()})}
+// runs coreLens in a Worker built from its own source, so the page stays responsive; falls back to the main thread if Workers are unavailable
+function runLensJob(job,note){return new Promise(resolve=>{
+ const inline=()=>{note("Re-settling the layout…");setTimeout(()=>resolve(coreLens(job)),20)};
+ let w=null;try{const src=coreLens.toString()+";self.onmessage=function(e){var r=coreLens(e.data);self.postMessage(r,[r.V2.buffer,r.X.buffer,r.nb2.buffer,r.r2.buffer,r.aff.buffer].concat(r.snaps.map(function(s){return s.buffer})))}";w=new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})))}catch(err){w=null}
+ if(!w){inline();return}
+ note("Re-weighting (in the background)…");
+ w.onmessage=e=>{w.terminate();resolve(e.data)};
+ w.onerror=()=>{w.terminate();inline()};
+ w.postMessage(job)})}
+function cosOrig(i,j){let s=0;const a=i*DIM0,b=j*DIM0;for(let k=0;k<DIM0;k++)s+=VEC0[a+k]*VEC0[b+k];return s}
+function resetLens(){if(!LENS.on){const n=$("lnote");if(n)n.textContent="No lens is active.";return}
+ VEC=VEC0;DIM=DIM0;R=R0;NB=NB0;medianNbrCos.v=null;THREADS.length=0;$("pullp").style.display="none";const from=Float32Array.from(POS),t0=performance.now(),X=Float32Array.from(D.pos.flat());BASE.set(X);
+ const step=()=>{const t=Math.min(1,(performance.now()-t0)/1200),e=1-Math.pow(1-t,3);for(let i=0;i<3*N;i++)POS[i]=from[i]+(X[i]-from[i])*e;geo.attributes.position.needsUpdate=true;invalidate(true);if(S.links)buildLinks();drawLines();if(t<1)requestAnimationFrame(step)};step();
+ LENS.on=false;LENS.aff=null;LENS.spec=null;LENS.pairs=null;$("surp").style.display="none";$("bLens").classList.remove("on");$("bLens").textContent="Lens";if(S.lens==="aff"){S.lens="cluster";$("lens").value="cluster"}S.hits=null;S.nbrs=null;lineSpec=[];refresh();$("lensm").style.display="none"}
+// newly close pairs: items that sat far apart in the original space and become close under the active lens
+const ord=n=>{const m=n%100,d=n%10;return n.toLocaleString()+((m>=11&&m<=13)?"th":d===1?"st":d===2?"nd":d===3?"rd":"th")};
+function inNB0(i,j){const K0=NB0F.length/N;for(let q=0;q<K0;q++)if(NB0F[i*K0+q]===j)return true;return false}
+async function computeSurprise(V2,DX,nb2){const K=12,TOP=12,anch=new Set(LS.anch);const cand=[],seen=new Set();
+ for(let i=0;i<N;i++){if(S.hide[i])continue;for(let q=0;q<TOP;q++){const j=nb2[i*K+q];if(j<0||j===i||S.hide[j])continue;const key=i<j?i*N+j:j*N+i;if(seen.has(key))continue;seen.add(key);if(inNB0(i,j)||inNB0(j,i))continue;
+   const c0=cosOrig(i,j);let cl=0;const a=i*DX,b=j*DX;for(let k=0;k<DX;k++)cl+=V2[a+k]*V2[b+k];cand.push([i,j,q,c0,cl])}}
+ cand.sort((x,y)=>(y[4]-y[3])-(x[4]-x[3]));const pool=cand.slice(0,700);let seed=987;const rnd=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const SAMP=[];for(let k=0;k<500;k++)SAMP.push(Math.floor(rnd()*N));const out=[];
+ for(let n=0;n<pool.length;n++){const [i,j,q,c0,cl]=pool[n];let cnt=0,tot=0;for(const k of SAMP){if(k===i||k===j)continue;tot++;if(cosOrig(i,k)>c0)cnt++}
+  const rank=Math.round(cnt/Math.max(1,tot)*N);if(rank<60)continue;
+  let rev=-1;for(let r=0;r<K;r++)if(nb2[j*K+r]===i){rev=r;break}
+  out.push({i,j,rank,lens:q+1,rev:rev>=0?rev+1:null,c0,cl,surprise:Math.log10((rank+1)/(q+1)),anchor:anch.has(i)||anch.has(j),cross:P[i].cluster!==P[j].cluster});
+  if(n%40===39)await new Promise(r=>setTimeout(r,0))}
+ out.sort((x,y)=>y.surprise-x.surprise||y.cl-x.cl);LENS.pairs=out.slice(0,250);return LENS.pairs}
+let SURP={cross:true,anchors:true};
+function openSurprise(){const e=$("surp");e.style.display="block";renderSurprise()}
+function renderSurprise(){const e=$("surp");const all=LENS.pairs||[];
+ if(!LENS.on){e.innerHTML='<div class="meta">Apply a lens first. This panel then ranks the pairs of items that were far apart before and are close now.</div>';return}
+ if(!LENS.pairs){e.innerHTML='<div class="meta">Comparing the lensed space with the original…</div>';return}
+ const list=all.filter(p=>(!SURP.cross||p.cross)&&(!SURP.anchors||!p.anchor)).slice(0,30);
+ e.innerHTML=`<div class="meta" style="margin-bottom:6px">Under this lens, ${all.length} ${all.length===1?"pair":"pairs"} of items moved from far apart to close. They are ranked by how far apart they were (their place in each other's list of nearest items before) against how close they are now. Each is a possible link that the original view hid.</div>
+ <label class="sm"><input type="checkbox" id="sx1" ${SURP.cross?"checked":""}> only pairs from different clusters</label><label class="sm"><input type="checkbox" id="sx2" ${SURP.anchors?"checked":""}> leave out pairs that include a lens anchor</label>`+
+ (list.length?list.map((p,k)=>`<div style="border-top:1px solid var(--line);padding:7px 0"><div><b>${k+1}.</b> <a class="pl" data-a="${p.i}">${esc(P[p.i].title.slice(0,64))}</a> <span class="meta">${P[p.i].year||""}</span></div><div style="padding-left:16px">⟷ <a class="pl" data-a="${p.j}">${esc(P[p.j].title.slice(0,64))}</a> <span class="meta">${P[p.j].year||""}</span></div><div class="meta" style="padding-left:16px">was about the ${ord(p.rank)} nearest, now the ${ord(p.lens)} nearest${p.rev?" (mutual)":""} · similarity ${p.c0.toFixed(2)} to ${p.cl.toFixed(2)}${p.cross?" · "+esc(CL[P[p.i].cluster].name)+" and "+esc(CL[P[p.j].cluster].name):""}</div><div class="vb" style="margin-top:4px"><button data-sp="${k}" style="padding:2px 10px;font-size:12.5px">Show on map</button></div></div>`).join(""):'<div class="meta" style="margin-top:8px">No pairs match these filters.</div>')+
+ `<div class="btns"><button id="spcp">Copy list</button><button id="spdl">Save as file</button></div><div id="spnote" class="meta"></div>`;
+ $("sx1").onchange=ev=>{SURP.cross=ev.target.checked;renderSurprise()};$("sx2").onchange=ev=>{SURP.anchors=ev.target.checked;renderSurprise()};
+ e.querySelectorAll("[data-a]").forEach(a=>a.onclick=()=>{const i=+a.dataset.a;select(i);flyTo(pv(i),28,800)});
+ e.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>{const p=list[+b.dataset.sp];S.pins=[p.i,p.j];if(!S.selMode)$("bSel").click();pinsUI();select(-1);S.pins=[p.i,p.j];lineSpec=[[p.i,p.j,[1,.82,.3]]];drawLines();const m=pv(p.i).add(pv(p.j)).multiplyScalar(.5);flyTo(m,Math.max(26,pv(p.i).distanceTo(pv(p.j))*2.2),900);refresh()});
+ const md=()=>"# Newly close pairs under the lens\n\nAnchors: "+(LENS.spec?LENS.spec.anchors.join("; "):"")+"\n\n"+list.map((p,k)=>(k+1)+". "+P[p.i].title+" ("+(P[p.i].year||"n.d.")+") <-> "+P[p.j].title+" ("+(P[p.j].year||"n.d.")+"). Was about the "+ord(p.rank)+" nearest, now "+ord(p.lens)+". Similarity "+p.c0.toFixed(2)+" to "+p.cl.toFixed(2)+".").join("\n");
+ const sn=t=>{const n=$("spnote");if(n)n.textContent=t};
+ $("spcp").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(md());ok=true}catch(x){}sn(ok?"Copied.":"Clipboard is blocked here. Use Save as file.")};
+ $("spdl").onclick=async()=>{const dl=await (typeof claude!=="undefined"?claude.use("downloads"):Promise.resolve(null)).catch(()=>null);if(dl){try{await dl.save({filename:"newly_close_pairs.md",data:md()});sn("Saved.")}catch(x){}}else sn("Saving is unavailable in this view.")}}
+$("bLens").onclick=()=>{const e=$("lensm");if(e.style.display==="block")e.style.display="none";else openLens()};
+$("abk").onclick=restoreAna;$("abx").onclick=()=>{hideBack();$("ana").innerHTML=""};
+// loop
+// labels: cluster names from far away, item names up close
+const LB=$("lbls"),clEls=[],PP=[],clCen=CL.map(()=>new THREE.Vector3()),clAvail=[];let lbTick=0;const _lv=new THREE.Vector3();
+cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;for(let k=0;k<clEls.length;k++){const el=clEls[k];if(el.style.display==="none")continue;const w=el.offsetWidth,h=el.offsetHeight,cx=parseFloat(el.style.left),cy=parseFloat(el.style.top);if(Math.abs(x-cx)<w/2&&Math.abs(y-cy)<h/2){calcClusterCentres();flyTo(clCen[k],55,900);break}}});
+const smooth=(x,lo,hi)=>{const t=Math.max(0,Math.min(1,(x-lo)/(hi-lo)));return t*t*(3-2*t)};
+const lbW=i=>{const p=P[i];return(p.docs&&p.docs.length?4:p.kind==="author"||p.follow?4:p.kind==="cited"?3:p.kind==="background"?1.5:0)*3+Math.log1p(cites[i])};
+const byCites=[...Array(N).keys()].filter(i=>P[i].kind!=="ours").sort((a,b)=>lbW(b)-lbW(a));
+function calcClusterCentres(){const sum=CL.map(()=>[0,0,0,0]);for(let i=0;i<N;i++){if(S.hide[i])continue;const c=sum[P[i].cluster];c[0]+=POS[3*i];c[1]+=POS[3*i+1];c[2]+=POS[3*i+2];c[3]++}CL.forEach((c,k)=>{const q=sum[k];clAvail[k]=q[3];if(q[3])clCen[k].set(q[0]/q[3],q[1]/q[3],q[2]/q[3])})}
+CL.forEach((c,k)=>{const e=document.createElement("div");e.className="cl";e.textContent=c.name.replace(/ \/ /g," · ");e.style.display="none";LB.appendChild(e);clEls.push(e)});
+for(let k=0;k<26;k++){const e=document.createElement("div");e.className="pp";e.style.display="none";LB.appendChild(e);PP.push(e)}
+function scr(x,y,z){_lv.set(x,y,z).project(cam);if(_lv.z>1||_lv.z<-1)return null;return[(_lv.x*.5+.5)*cv.clientWidth,(-_lv.y*.5+.5)*cv.clientHeight]}
+// items connected to the current focus: the open item with its nearest neighbours, the selected set, and a focused item with its neighbours
+function focusIds(){const out=[];const add=i=>{if(i!=null&&i>=0&&!out.includes(i)&&!S.hide[i])out.push(i)};add(S.sel);if(S.nbrs&&S.nbrs.length<=14)S.nbrs.forEach(add);S.pins.forEach(add);add(S.focus);(S.focusN||[]).forEach(add);return out}
+function updateLabels(){if(!$("showLb").checked){LB.style.display="none";return}LB.style.display="";
+ if(lbTick++%20===0)calcClusterCentres();
+ const W=cv.clientWidth,H=cv.clientHeight,boxes=[];const fit=(x,y,w,h)=>{for(const b of boxes)if(Math.abs(b[0]-x)<(b[2]+w)/2&&Math.abs(b[1]-y)<(b[3]+h)/2)return false;boxes.push([x,y,w,h]);return true};
+ const topPad=Math.max(80,($("top").getBoundingClientRect().bottom||0)+16);
+ const fids=focusIds(),mode=fids.length>0;
+ const far=mode?0:smooth(dist,75,135);clEls.forEach(e=>e.style.display="none");
+ if(far>.02){const order=CL.map((c,k)=>k).sort((a,b)=>CL[b].size-CL[a].size);
+  for(const k of order){if(!clAvail[k])continue;const q=scr(clCen[k].x,clCen[k].y,clCen[k].z);if(!q||q[0]<50||q[0]>W-50||q[1]<topPad||q[1]>H-40)continue;
+   const fs=12+Math.min(10,Math.sqrt(CL[k].size)*.4),e=clEls[k];const w=e.textContent.length*fs*.46;if(!fit(q[0],q[1],w,fs*1.4))continue;
+   e.style.display="";e.style.fontSize=fs.toFixed(1)+"px";e.style.left=q[0].toFixed(1)+"px";e.style.top=q[1].toFixed(1)+"px";e.style.opacity=(far*(.6+Math.min(.4,CL[k].size/400))).toFixed(2)}}
+ PP.forEach(e=>e.style.display="none");const near=mode?1:1-smooth(dist,70,150);
+ if(near>.05){let used=0;const cx=W/2,cy=H/2;const want=mode?fids.slice():[];if(!mode){if(S.sel>=0)want.push(S.sel);S.pins.forEach(i=>want.push(i))}
+  const take=i=>{if(used>=PP.length||S.hide[i])return;const q=scr(POS[3*i],POS[3*i+1],POS[3*i+2]);if(!q||q[0]<20||q[0]>W-60||q[1]<topPad||q[1]>H-30)return;
+   const t=P[i].title;const lab=t.length>54?t.slice(0,52)+"…":t;if(!fit(q[0]+8+lab.length*3.2,q[1],lab.length*6.4+14,15))return;
+   const e=PP[used++];e.style.display="";e.textContent=lab;e.style.left=q[0].toFixed(1)+"px";e.style.top=q[1].toFixed(1)+"px";e.style.opacity=near.toFixed(2)};
+  want.forEach(take);if(!mode){let scanned=0;for(const i of byCites){if(used>=PP.length||scanned++>2600)break;if(want.includes(i))continue;take(i)}}}}
+$("bLayers").onclick=e=>{e.stopPropagation();const o=$("layers").classList.toggle("open");$("bLayers").classList.toggle("on",o)};
+document.addEventListener("pointerdown",e=>{const L=$("layers");if(L.classList.contains("open")&&!L.contains(e.target)&&e.target!==$("bLayers")){L.classList.remove("open");$("bLayers").classList.remove("on")}});
+$("nPap").textContent=N.toLocaleString()+" items";if(innerWidth<760)setTimeout(()=>{const t=$("top");if(!t.classList.contains("collapsed"))$("tc").click()},0);
+{const tbSet=()=>{document.documentElement.style.setProperty("--tb",Math.round($("top").getBoundingClientRect().bottom+12)+"px")};new ResizeObserver(tbSet).observe($("top"));tbSet()}
+$("showLb").addEventListener("change",()=>invalidate());
+let last=performance.now();
+function frame(now){raf=0;const dt=Math.min(.05,(now-last)/1000);last=now;
+ const active=!!fly||zoomT!=null||keys.size>0;
+ if(fly){const t=Math.min(1,(now-fly.t0)/fly.ms),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;tgt.lerpVectors(fly.from.t,fly.to.t,e);dist=fly.from.d+(fly.to.d-fly.from.d)*e;if(t>=1)fly=null}
+ if(keys.size){const sp=dist*.9*dt*(keys.has("shift")?3:1);const fwd=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),rt=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  if(keys.has("w"))tgt.addScaledVector(fwd,sp);if(keys.has("s"))tgt.addScaledVector(fwd,-sp);if(keys.has("a"))tgt.addScaledVector(rt,-sp);if(keys.has("d"))tgt.addScaledVector(rt,sp);if(keys.has("e"))tgt.y+=sp;if(keys.has("q"))tgt.y-=sp}
+ if(zoomT!=null){dist+=(zoomT-dist)*Math.min(1,dt*9);if(Math.abs(zoomT-dist)<.05)zoomT=null}
+ if(active)needRender=true;
+ // selected and pinned items pulse, which needs a redraw about ten times a second and nothing more
+ const pulsing=S.sel>=0||S.pins.length>0;
+ if(!needRender){if(pulsing&&now-lastPulse>=100)needRender=true;else{if(pulsing)raf=requestAnimationFrame(frame);return}}
+ lastPulse=now;needRender=false;
+ mat.uniforms.uT.value=now/1000;mat.uniforms.uFocus.value=dist;
+ camUpdate();cam.updateMatrixWorld();bmUpdate();depthSort();updateLabels();renderer.render(scene,cam);
+ if(active||pulsing)raf=requestAnimationFrame(frame)}
+bmUpdateBtn();resize();refresh();drawHist();camUpdate();invalidate(true);
+new ResizeObserver(()=>{resize();drawHist()}).observe(cv);
+(async()=>{try{sample=await claude.use("sample");if(sample)$("bChat").style.display=""}catch(e){}})();
+$("hint").insertAdjacentHTML("beforeend","");
+// cross-field links: from a selected item to 1 to 10 items in other fields that connect to it in unexpected ways
+const XL={on:false,i:-1,mode:"meaning",k:5,far:true,disc:true,shared:false,noOurs:true,res:[]};
+const TG=P.map(p=>{if(!p.facet)return[];const f=p.facet;return[...f.ops.map(x=>"op|"+x),...f.dims.map(x=>"dim|"+x),...f.forms.map(x=>"form|"+x.toLowerCase()),...f.scales.map(x=>"sc|"+x.toLowerCase())]});
+const TC=new Map();TG.forEach(a=>new Set(a).forEach(t=>TC.set(t,(TC.get(t)||0)+1)));
+const idf=t=>Math.log(N/(TC.get(t)||1));
+const prettyTag=t=>{const k=t.slice(0,t.indexOf("|")),v=t.slice(t.indexOf("|")+1).replace(/_/g," ");return(k==="op"?"operation: ":k==="dim"?"quantity: ":k==="form"?"form: ":"scale: ")+v};
+const CLC=(()=>{const c=CL.map(()=>[0,0,0,0]);P.forEach((p,i)=>{const a=c[p.cluster];a[0]+=POS[3*i];a[1]+=POS[3*i+1];a[2]+=POS[3*i+2];a[3]++});return c.map(a=>[a[0]/(a[3]||1),a[1]/(a[3]||1),a[2]/(a[3]||1)])})();
+const prDisc=p=>p.facet&&p.facet.disc?String(p.facet.disc).replace(/_/g," "):"";
+function xlCompute(i){const A=P[i],ta=new Set(TG[i]);const c0=CLC[A.cluster];const cd=CLC.map(c=>Math.hypot(c[0]-c0[0],c[1]-c0[1],c[2]-c0[2]));
+ const so=cd.filter((_,k)=>k!==A.cluster).sort((a,b)=>a-b);const med=so[so.length>>1];const out=[];
+ for(let j=0;j<N;j++){if(j===i||S.hide[j])continue;const B=P[j];if(B.cluster===A.cluster)continue;if(XL.noOurs&&B.kind==="ours")continue;if(XL.far&&cd[B.cluster]<med)continue;
+  if(XL.disc&&A.facet&&B.facet&&A.facet.disc&&A.facet.disc===B.facet.disc)continue;
+  const sh=TG[j].filter(t=>ta.has(t));const c=cos(i,j);
+  if(XL.mode==="structure"){if(!sh.length)continue;const shs=sh.reduce((a,t)=>a+idf(t),0),tot=[...new Set([...ta,...TG[j]])].reduce((a,t)=>a+idf(t),0);out.push([j,shs/tot+.05*c,sh,c])}
+  else{if(XL.shared&&!sh.length)continue;out.push([j,2*c+R[j],sh,c])}}
+ out.sort((a,b)=>b[1]-a[1]);const per=new Map(),res=[];for(const r of out){const cl=P[r[0]].cluster;if((per.get(cl)||0)>=2)continue;per.set(cl,(per.get(cl)||0)+1);res.push(r);if(res.length>=XL.k)break}return res}
+function xlRun(i,fly){const res=xlCompute(i);XL.res=res;const ids=res.map(r=>r[0]);S.hits=null;S.nbrs=[i,...ids];S.emph=S.pins.concat(ids);lineSpec=ids.map(j=>[i,j,[1,.76,.33]]);refresh();if(fly&&ids.length)focusSet([i,...ids]);xlRender(i)}
+function xlOpen(i){XL.on=true;XL.i=i;const e=$("xl");e.style.display="block";xlRun(i,true)}
+function xlClose(){XL.on=false;$("xl").style.display="none";if(S.sel>=0)select(S.sel);else{S.nbrs=null;lineSpec=[];refresh()}}
+function xlRender(i){const e=$("xl"),A=P[i];const hasF=!!A.facet;
+ const ch=(on,key,label)=>`<span class="chip ${on?"on":""}" data-x="${key}">${label}</span>`;
+ let h=`<div class="meta">From <b>${esc(A.title.slice(0,90))}</b> in <i>${esc(CL[A.cluster].name)}</i>${prDisc(A)?" · "+esc(prDisc(A)):""}. Each result sits in a different cluster${XL.disc&&hasF?" and carries a different discipline tag":""}, so a line here is a connection across fields.</div>
+ <div style="margin:6px 0 2px">${ch(XL.mode==="meaning","m:meaning","Close in meaning")}${ch(XL.mode==="structure","m:structure","Shared structure")}</div>
+ <div class="meta">${XL.mode==="meaning"?"Ranks items in other clusters by the hub-corrected similarity of their text vectors to this item.":"Ranks items in other clusters by the operations, quantity dimensions, mathematical forms and scales they share with this item, with rarer shared tags counting more."}</div>
+ <label class="sm" style="display:flex;gap:8px;align-items:center;margin:6px 0">links <input type="range" id="xlk" min="1" max="10" value="${XL.k}" style="flex:1"> <b id="xlkv">${XL.k}</b></label>
+ <div>${ch(XL.far,"far","distant fields only")}${ch(XL.disc,"disc","different discipline tag")}${XL.mode==="meaning"?ch(XL.shared,"shared","must share a structure tag"):""}${ch(XL.noOurs,"ours","leave out your marked items")}</div>`;
+ if(XL.mode==="structure"&&!hasF)h+=`<div class="meta" style="margin-top:8px">This item has no structure tags, so no shared structure can be found. Try Close in meaning.</div>`;
+ else if(!XL.res.length)h+=`<div class="meta" style="margin-top:8px">No item matches these settings. Loosen one of the switches above.</div>`;
+ else h+=XL.res.map(([j,sc,sh,c],k)=>{const B=P[j];const why=sh.length?"shares "+sh.slice(0,4).map(prettyTag).join("; "):"no shared structure tag";return`<div class="row"><div><b>${k+1}.</b> <a class="pl" data-j="${j}">${esc(B.title.slice(0,86))}</a> <span class="meta">${B.year||""}</span></div><div class="meta" style="padding-left:16px">${esc(CL[B.cluster].name)}${prDisc(B)?" · "+esc(prDisc(B)):""} · text similarity ${c.toFixed(2)}</div><div class="meta" style="padding-left:16px">${esc(why)}${sh.length>4?" (+"+(sh.length-4)+" more)":""}</div></div>`}).join("")+`<div class="meta" style="margin-top:6px">Clicking a result selects it, and the links then re-centre on that item so you can walk from field to field. Gold lines on the map join the selected item to its results.</div>`;
+ e.innerHTML=h;
+ e.querySelectorAll("[data-x]").forEach(c=>c.onclick=()=>{const k=c.dataset.x;if(k==="m:meaning")XL.mode="meaning";else if(k==="m:structure")XL.mode="structure";else if(k==="far")XL.far=!XL.far;else if(k==="disc")XL.disc=!XL.disc;else if(k==="shared")XL.shared=!XL.shared;else if(k==="ours")XL.noOurs=!XL.noOurs;xlRun(i,false)});
+ const sl=$("xlk");sl.oninput=()=>{$("xlkv").textContent=sl.value};sl.onchange=()=>{XL.k=+sl.value;xlRun(i,false)};
+ e.querySelectorAll("a.pl").forEach(a=>a.onclick=()=>{const j=+a.dataset.j;select(j);flyTo(pv(j),28,800)})}
+// principles browser: the operations, quantities, forms and disciplines that recur across clusters
+const PR={tags:new Set(),text:""};
+function prMatch(p){if(!p.facet)return false;const f=p.facet;for(const t of PR.tags){const x=t.indexOf("|"),k=t.slice(0,x),v=t.slice(x+1);
+  if(k==="op"&&!f.ops.includes(v))return false;if(k==="dim"&&!f.dims.includes(v))return false;if(k==="form"&&!f.forms.some(y=>y.toLowerCase()===v))return false;if(k==="ev"&&f.ev!==v)return false;if(k==="disc"&&f.disc!==v)return false}
+ if(PR.text){const hay=(f.core+" "+f.forms.join(" ")+" "+f.scales.join(" ")+" "+(f.sys||"")).toLowerCase();if(!PR.text.toLowerCase().split(/\s+/).filter(Boolean).every(w=>hay.includes(w)))return false}return true}
+const prCount=(fn,top)=>{const m=new Map();P.forEach(p=>{if(p.facet)new Set(fn(p.facet)).forEach(v=>{if(v)m.set(v,(m.get(v)||0)+1)})});let a=[...m].sort((x,y)=>y[1]-x[1]);return top?a.slice(0,top):a};
+function prinRender(keepFocus){const e=$("prin");const ops=prCount(f=>f.ops),dims=prCount(f=>f.dims,24),forms=prCount(f=>f.forms.map(x=>x.toLowerCase()),30).filter(x=>x[1]>=3),discs=prCount(f=>[f.disc]),evs=prCount(f=>[f.ev]);
+ const chips=(k,a)=>a.map(([v,n])=>`<span class="chip ${PR.tags.has(k+"|"+v)?"on":""}" data-t="${esc(k+"|"+v)}">${esc(String(v).replace(/_/g," "))} <small>${n}</small></span>`).join("");
+ const anyF=PR.tags.size||PR.text;const hits=[];if(anyF)P.forEach((p,i)=>{if(!S.hide[i]&&prMatch(p))hits.push(i)});
+ const byC=new Map();hits.forEach(i=>{const c=P[i].cluster;if(!byC.has(c))byC.set(c,[]);byC.get(c).push(i)});const cs=[...byC].sort((a,b)=>b[1].length-a[1].length);const mx=cs.length?cs[0][1].length:1;
+ const lists=cs.map(([c,a])=>a.slice());const order=[];for(let r=0;order.length<30&&lists.some(l=>r<l.length);r++)lists.forEach(l=>{if(r<l.length&&order.length<30)order.push(l[r])});
+ e.innerHTML=`<div class="meta">The structure tags describe what an item does, apart from its field. Pick one or more below to see every item that carries all of them, and which clusters they come from. A principle that shows up in many clusters is a candidate bridge between fields.</div>
+ <input type="text" id="prq" placeholder="search the core principle, forms, scales and systems" value="${esc(PR.text)}">
+ <div class="meta">Operations</div><div>${chips("op",ops)}</div>
+ <div class="meta" style="margin-top:6px">Quantity dimensions</div><div>${chips("dim",dims)}</div>
+ <div class="meta" style="margin-top:6px">Mathematical forms and named laws (three or more items)</div><div>${chips("form",forms)}</div>
+ <div class="meta" style="margin-top:6px">Discipline tag</div><div>${chips("disc",discs)}</div>
+ <div class="meta" style="margin-top:6px">Kind of evidence</div><div>${chips("ev",evs)}</div>
+ <div class="btns" style="margin-top:8px"><button id="prclr">Clear</button></div>`+
+ (anyF?`<h3 style="margin:10px 0 2px">${hits.length} items across ${cs.length} clusters</h3>${cs.slice(0,14).map(([c,a])=>`<div data-c="${c}" style="cursor:pointer"><div class="meta">${esc(CL[c].name)} · ${a.length}</div><div class="bar" style="width:${Math.max(4,a.length/mx*100)}%"></div></div>`).join("")}<div class="meta" style="margin-top:8px">Items (taken in turn from each cluster, so the list shows the spread and does not favour the biggest or most cited)</div>${order.map(j=>`<div class="row"><a class="pl" data-j="${j}">${esc(P[j].title.slice(0,88))}</a> <span class="meta">${P[j].year||""} · ${esc(CL[P[j].cluster].name)}</span><div class="meta" style="padding-left:12px">${esc(P[j].facet.core.slice(0,190))}</div></div>`).join("")}`:`<div class="meta" style="margin-top:10px">Nothing selected yet.</div>`);
+ S.hits=anyF&&hits.length?hits:null;if(!anyF)S.nbrs=S.nbrs;refresh();
+ e.querySelectorAll("[data-t]").forEach(c=>c.onclick=()=>{const t=c.dataset.t;PR.tags.has(t)?PR.tags.delete(t):PR.tags.add(t);prinRender();if(S.hits)focusSet(S.hits.slice(0,400))});
+ e.querySelectorAll("[data-c]").forEach(d=>d.onclick=()=>{const c=+d.dataset.c;const a=byC.get(c)||[];S.hits=a;refresh();if(a.length)focusSet(a)});
+ e.querySelectorAll("a.pl").forEach(a=>a.onclick=()=>{const j=+a.dataset.j;select(j);flyTo(pv(j),28,800)});
+ const q=$("prq");q.oninput=()=>{PR.text=q.value;clearTimeout(prinRender.t);prinRender.t=setTimeout(()=>{prinRender(true)},350)};if(keepFocus){q.focus();q.setSelectionRange(q.value.length,q.value.length)}
+ $("prclr").onclick=()=>{PR.tags.clear();PR.text="";S.hits=null;prinRender()}}
+function prinClose(){$("prin").style.display="none";$("bPrin").classList.remove("on");S.hits=null;refresh()}
+$("bPrin").onclick=()=>{const e=$("prin");if(e.style.display==="block")prinClose();else{e.style.display="block";$("bPrin").classList.add("on");prinRender()}};
+// paste an idea: a phrase or paragraph is matched against every item, in its own words and in how other fields might say it
+const RS={ours:true,text:""};
+function resClose(){$("rs").style.display="none";$("bRes").classList.remove("on");S.hits=null;lineSpec=[];refresh()}
+function resOpen(){const e=$("rs");e.style.display="block";$("bRes").classList.add("on");
+ e.innerHTML=`<div class="meta">Paste a phrase, a claim or a whole paragraph. It is matched against the titles, abstracts and structure tags of every item on the map. ${sample?"Claude also restates the idea in plain technical terms and in the vocabularies of other fields, which surfaces connections that share no words with your text. Your text is sent to Claude for this step.":"Claude is not available in this view, so only the words you paste are matched."}</div>
+ <textarea id="rst" placeholder="e.g. a system that models itself cannot stay in a superposition of its own states"></textarea>
+ <div style="margin:6px 0"><span class="chip ${RS.ours?"on":""}" id="rso">include your marked items</span></div>
+ <div class="btns"><button id="rsgo">Find resonance</button></div><div id="rsout" style="margin-top:8px"></div>`;
+ $("rst").value=RS.text;$("rst").oninput=()=>{RS.text=$("rst").value};$("rso").onclick=()=>{RS.ours=!RS.ours;$("rso").classList.toggle("on",RS.ours)};$("rsgo").onclick=()=>resRun($("rst").value.trim())}
+function parseJ(t){const m=String(t||"").match(/\{[\s\S]*\}/);if(!m)return null;try{return JSON.parse(m[0])}catch(e){return null}}
+async function resRun(text){const out=$("rsout");if(text.length<8){out.innerHTML='<div class="meta">Type a little more first.</div>';return}
+ out.innerHTML='<div class="meta">Matching the words you pasted…</div>';
+ const queries=[{label:"your wording",q:text,w:1}];
+ let ex=null;
+ if(sample){out.innerHTML='<div class="meta">Matching the words you pasted, and asking Claude to restate the idea in other vocabularies…</div>';
+  try{const r=await sample([{role:"user",content:`A researcher pasted this text from their own thinking: """${text.slice(0,2500)}"""\nReturn only a JSON object with these keys. "restated": two or three plain technical sentences stating the underlying idea without the author's idiosyncratic terms. "concepts": up to 8 short phrases naming the core ideas. "other_fields": up to 6 objects {"field": short name, "phrase": one sentence in how that field would state a similar idea, using that field's own technical vocabulary}, choosing fields far from each other, such as molecular biology, condensed matter physics, information theory, control theory, neuroscience, philosophy of mind, thermodynamics, computer science, ecology. "ops": up to 3 values chosen only from ${JSON.stringify(ALLOPS)}. "forms": up to 3 named equations, laws or theorems that the idea relates to. No other text.`}],{modelTier:"default",cache:false});ex=parseJ(r.text)}catch(x){out.innerHTML='<div class="meta">Claude could not be reached ('+esc(x&&x.message||x)+'). Showing matches on your wording only.</div>'}}
+ if(ex){if(ex.restated)queries.push({label:"restated in plain terms",q:ex.restated+" "+(ex.concepts||[]).join(" "),w:1});(ex.other_fields||[]).slice(0,6).forEach(o=>{if(o&&o.phrase)queries.push({label:"as "+(o.field||"another field")+" would say it",q:o.phrase,w:.7})})}
+ const sc=new Map(),why=new Map();
+ queries.forEach((qq,qi)=>{const rk=search(qq.q,80,RS.ours);rk.forEach((i,r)=>{sc.set(i,(sc.get(i)||0)+qq.w/(60+r));if(!why.has(i))why.set(i,[]);why.get(i).push([qi,r])})});
+ const opsQ=new Set((ex&&ex.ops||[]).filter(o=>ALLOPS.includes(o))),formQ=(ex&&ex.forms||[]).map(x=>String(x).toLowerCase());
+ sc.forEach((v,i)=>{const f=P[i].facet;if(!f)return;let b=0;f.ops.forEach(o=>{if(opsQ.has(o))b++});f.forms.forEach(x=>{const y=x.toLowerCase();if(formQ.some(z=>y.includes(z)||z.includes(y)))b+=2});if(b)sc.set(i,v+Math.min(b,3)*.008)});
+ const rank=[...sc].sort((a,b)=>b[1]-a[1]);const per=new Map(),top=[];for(const [i,s] of rank){const c=P[i].cluster;if((per.get(c)||0)>=3)continue;per.set(c,(per.get(c)||0)+1);top.push(i);if(top.length>=24)break}
+ if(!top.length){out.innerHTML='<div class="meta">Nothing on the map shares vocabulary with this text. Try restating it with more technical terms.</div>';return}
+  const byC=new Map();top.forEach(i=>byC.set(P[i].cluster,(byC.get(P[i].cluster)||0)+1));const cs=[...byC].sort((a,b)=>b[1]-a[1]);const mx=cs[0][1];
+ const row=i=>{const w=why.get(i)||[];const labs=[...new Set(w.map(x=>queries[x[0]].label))];const f=P[i].facet;return`<div class="row"><a class="pl" data-j="${i}">${esc(P[i].title.slice(0,90))}</a> <span class="meta">${P[i].year||""}${P[i].kind==="ours"?" · your marked item":""}</span><div class="meta" style="padding-left:12px">${esc(CL[P[i].cluster].name)}${prDisc(P[i])?" · "+esc(prDisc(P[i])):""}</div><div class="meta" style="padding-left:12px">matched ${esc(labs.slice(0,3).join("; "))}${labs.length>3?" (+"+(labs.length-3)+")":""}</div>${f?`<div class="meta" style="padding-left:12px">${esc(f.core.slice(0,170))}</div>`:""}</div>`};
+ const viaWords=i=>(why.get(i)||[]).some(x=>x[0]===0);const hidden=top.filter(i=>!viaWords(i));const direct=top.filter(viaWords);
+ out.innerHTML=(ex&&ex.restated?`<div class="abs"><b>Read as.</b> ${esc(ex.restated)}</div>`:"")+
+ `<h3 style="margin:8px 0 2px">Where it resonates</h3>${cs.slice(0,10).map(([c,n])=>`<div data-c="${c}" style="cursor:pointer"><div class="meta">${esc(CL[c].name)} · ${n}</div><div class="bar" style="width:${Math.max(6,n/mx*100)}%"></div></div>`).join("")}`+
+ (hidden.length?`<h3 style="margin:10px 0 2px">Possible hidden connections</h3><div class="meta">These share no strong vocabulary with your text and matched only through the restated or other-field versions of the idea.</div>${hidden.map(row).join("")}`:"")+
+ `<h3 style="margin:10px 0 2px">Closest to your wording</h3>${direct.map(row).join("")||'<div class="meta">None.</div>'}`;
+ S.hits=top;S.nbrs=null;lineSpec=[];refresh();focusSet(top);
+ out.querySelectorAll("a.pl").forEach(a=>a.onclick=()=>{const j=+a.dataset.j;select(j);flyTo(pv(j),28,800)});
+ out.querySelectorAll("[data-c]").forEach(d=>d.onclick=()=>{const c=+d.dataset.c;const a=top.filter(i=>P[i].cluster===c);S.hits=a;refresh();focusSet(a)})}
+$("bRes").onclick=()=>{if($("rs").style.display==="block")resClose();else resOpen()};
+window.__idea={S,P,select,search,between,explain,regionUpdate,togglePin,LS,LENS,applyLens,XL,PR,xlOpen,xlRun,prinRender,resRun,resOpen,RS};
+})();
+</script>

@@ -1,0 +1,34 @@
+# The structure tags. Edit this file to describe the operations and evidence kinds in your own field;
+# `ideaspace tag` reads it, and the page shows whatever names you define here.
+# The idea behind the operations: they describe what a paper does to a system in field-neutral words,
+# so that papers from different fields that do similar things can be found next to each other.
+operations:
+  hold_alternatives: keeps several possibilities or states open at once
+  weight_histories: assigns weights, probabilities or amplitudes to alternative paths or histories
+  commit_record: fixes one outcome into a lasting, readable record
+  price_cost: assigns, pays or trades off a cost for an outcome
+  erase_dissipate: removes information or order, or dissipates energy
+  constrain_boundary: sets boundary conditions or limits on what another process can do
+  gate_switch: switches a process on or off, or between regimes, depending on a condition
+  modulate_tune: adjusts the strength, rate or parameters of a process
+  synchronize_couple: couples parts so that they move together or share a rhythm
+  pump_supply: supplies energy, material or signal to sustain a state
+  compress_capacity: compresses information or works within a limited capacity
+  conserve_invariant: preserves a quantity or symmetry under change
+  reconstruct_readout: reconstructs or reads out a hidden state from signals
+  observe_measure: measures or observes a system and records the result
+  select_filter: selects or filters among candidates by a criterion
+  self_model: a system represents or acts on a model of itself
+  transfer_convert: transfers or converts a quantity from one form or place to another
+  ledger_consensus: keeps a shared record that several parties agree on
+evidence_kinds:
+  direct_measurement_in_vivo: measured in a living organism
+  direct_measurement_in_vitro: measured in a lab preparation, cells, or a material
+  simulation_or_model: a computation or model
+  theory_or_derivation: a theoretical derivation
+  analogy_or_argument: an analogy or philosophical argument
+  anecdote_or_report: a case report or anecdote
+  review_or_summary: a review or summary of other work
+  prediction_or_proposal: a prediction or proposal
+  definition_or_framework: a definition or framework
+  not_a_claim: front matter, a heading, or other non-claim text

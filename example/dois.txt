@@ -1,0 +1,29 @@
+# Open-access papers from different fields, for trying the tool. Replace this file with your own list.
+# One DOI (or arXiv id) per line. Put * at the end of a line to mark it as one of your own papers.
+10.1073/pnas.1005484107  # Long-lived quantum coherence in photosynthetic complexes at physiologi
+10.1056/nejmra0808281  # General Anesthesia, Sleep, and Coma
+10.1098/rstb.2005.1622  # A theory of cortical responses
+10.1103/revmodphys.75.715  # Decoherence, einselection, and the quantum origins of the classical
+10.1103/physrevlett.77.4887  # Observing the Progressive Decoherence of the “Meter” in a Quantum Meas
+10.1073/pnas.0711968106  # Chemical magnetoreception in birds: The radical pair mechanism
+10.1073/pnas.1118959109  # Magnetically sensitive light-induced reactions in cryptochrome are con
+10.1103/physrevlett.106.040503  # Sustained Quantum Coherence and Entanglement in the Avian Compass
+10.1103/physrevd.55.5112  # M theory as a matrix model: A conjecture
+10.1007/jhep04(2011)029  # On the origin of gravity and the laws of Newton
+10.1103/revmodphys.74.825  # The holographic principle
+10.1073/pnas.95.24.14529  # A neuronal model of a global workspace in effortful cognitive tasks
+10.1126/science.1177894  # Rules for Biologically Inspired Adaptive Network Design
+10.1103/physreve.80.021926  # Memristive model of amoeba learning
+10.1103/physrevlett.83.648  # How to Share a Quantum Secret
+10.1523/jneurosci.23-35-11167.2003  # Neuronal Avalanches in Neocortical Circuits
+10.3389/fphys.2012.00015  # Criticality in Large-Scale Brain fMRI Dynamics Unveiled by a Novel Poi
+10.1088/0034-4885/29/1/306  # The fluctuation-dissipation theorem
+10.1088/0034-4885/75/12/126001  # Stochastic thermodynamics, fluctuation theorems and molecular machines
+10.1103/physreve.60.2721  # Entropy production fluctuation theorem and the nonequilibrium work rel
+10.1113/jphysiol.2014.271940  # Endogenous bioelectrical networks store non‐genetic patterning informa
+10.3389/fnsys.2022.768201  # Technological Approach to Mind Everywhere: An Experimentally-Grounded 
+10.1242/dev.073759  # Transmembrane voltage potential controls embryonic eye patterning in X
+10.1103/physrevlett.95.040602  # Entropy Production along a Stochastic Trajectory and an Integral Fluct
+10.1103/physrevlett.96.121301  # Nonequilibrium Thermodynamics of Spacetime
+10.48550/arxiv.1706.03762  # Attention Is All You Need
+10.48550/arxiv.0903.5082  # Quantum Darwinism (Zurek)
